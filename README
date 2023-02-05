@@ -1,0 +1,8 @@
+Sean Chan, Aedin Clay, Lance Tan
+Thesis: Blockchain Prescription
+
+
+=== HOW TO INSTALL ===
+
+1) Install the latest versions of golang and docker.
+2) Run "./install-fabric.sh binary docker" to install the binaries and docker images. DO NOT install fabric-samples.
