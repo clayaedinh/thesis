@@ -1,4 +1,4 @@
-package chaincode
+package application
 
 import "github.com/hyperledger/fabric-gateway/pkg/client"
 

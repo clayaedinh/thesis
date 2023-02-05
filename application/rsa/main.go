@@ -1,9 +1,9 @@
 package main
 
-import "github.com/clayaedinh/thesis/application/rsa/chaincode"
+import "github.com/clayaedinh/thesis/application/rsa/application"
 
 func main() {
-	chaincode.SetConnectionVariables("org1", "user1", "localhost:7051")
+	application.SetConnectionVariables("org1", "user1", "localhost:7051")
 
 	//connection := chaincode.ChaincodeConnect()
 
