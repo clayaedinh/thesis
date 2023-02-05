@@ -1,0 +1,16 @@
+[
+    {
+    "name": "prescriptionCollection",
+    "policy" : "OR('Org1MSP.member', 'Org2MSP.member')",
+    "blockToLive" : 0,
+    "memberOnlyRead" : true,
+    "memberOnlyWrite" : true    
+    },
+    {
+    "name": "accessListCollection",
+    "policy" : "OR('Org1MSP.member', 'Org2MSP.member')",
+    "blockToLive" : 0,
+    "memberOnlyRead" : true,
+    "memberOnlyWrite" : true    
+    }
+]
