@@ -1,1 +1,1 @@
-package chaincode
+package application
