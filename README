@@ -6,3 +6,13 @@ Thesis: Blockchain Prescription
 
 1) Install the latest versions of golang and docker.
 2) Run "./install-fabric.sh binary docker" to install the binaries and docker images. DO NOT install fabric-samples.
+
+=== HOW TO RUN ===
+
+Useful scripts are found in test-network/thesis_scripts.
+
+1) Start network: 
+network-up.sh
+
+2) Stop network: 
+network-down.sh
