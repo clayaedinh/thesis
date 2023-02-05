@@ -1,7 +1,10 @@
-**/vendor/**
-bin
-builders
-config
 *
 !/**/
 !*.*
+bin/
+builders/
+config/
+test/
+*.pem
+
+
