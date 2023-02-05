@@ -5,6 +5,7 @@ bin/
 builders/
 config/
 test/
+util/
 *.pem
 
 

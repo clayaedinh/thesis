@@ -1,4 +1,4 @@
-package chaincode
+package application
 
 import (
 	"crypto"
