@@ -4,5 +4,4 @@ use (
 	./application/rsa
 	./chaincode/basic
 	./chaincode/rsa
-	./util
 )
