@@ -1,4 +1,4 @@
-package application
+package src
 
 import (
 	"encoding/base64"
@@ -15,7 +15,7 @@ func CreatePrescription(contract *client.Contract) {
 	//optional step 5: base64
 }
 
-func StoreUserRSAPubkey(contract *client.Contract, username string, pubkey []byte) error {
+func ChainStoreUserPubkey(contract *client.Contract, username string, pubkey []byte) error {
 	b64pubkey := base64.StdEncoding.EncodeToString(pubkey)
 	_, err := contract.SubmitTransaction("StoreUserRSAPubkey", username, b64pubkey)
 	if err != nil {
@@ -24,7 +24,7 @@ func StoreUserRSAPubkey(contract *client.Contract, username string, pubkey []byt
 	return nil
 }
 
-func RetrieveUserRSAPubkey(contract *client.Contract, username string) ([]byte, error) {
+func ChainRetrieveUserPubkey(contract *client.Contract, username string) ([]byte, error) {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", username)
 	if err != nil {
 		return nil, err

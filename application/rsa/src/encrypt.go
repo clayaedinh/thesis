@@ -1,4 +1,4 @@
-package application
+package src
 
 import (
 	"crypto/rsa"
@@ -20,7 +20,16 @@ func readKeyfile(filename string) ([]byte, error) {
 	return block.Bytes, nil
 }
 
-func pubkeyFromBytes(arr []byte) (*rsa.PublicKey, error) {
+func ReadUserPubkey(username string) ([]byte, error) {
+	pathname := "rsakeys/" + username + "/pubkey.pem"
+	return readKeyfile(pathname)
+}
+func ReadUserPrivkey(username string) ([]byte, error) {
+	pathname := "rsakeys/" + username + "/privkey.pem"
+	return readKeyfile(pathname)
+}
+
+func ParsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
 	parseOut, _ := x509.ParsePKIXPublicKey(arr)
 	if parseOut == nil {
 		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
@@ -29,7 +38,7 @@ func pubkeyFromBytes(arr []byte) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-func privkeyFromBytes(arr []byte) (*rsa.PrivateKey, error) {
+func ParsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
 	parseOut, _ := x509.ParsePKCS8PrivateKey(arr)
 	if parseOut == nil {
 		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
@@ -37,3 +46,21 @@ func privkeyFromBytes(arr []byte) (*rsa.PrivateKey, error) {
 	key := parseOut.(*rsa.PrivateKey)
 	return key, nil
 }
+
+/*
+func RetrieveLocalUserPubkey(username string) (*rsa.PublicKey, error) {
+	keybytes, err := readKeyfile(username)
+	if err != nil {
+		return nil, err
+	}
+	return pubkeyFromBytes(keybytes)
+}
+
+func RetrieveLocalUserPrivkey(username string) (*rsa.PrivateKey, error) {
+	keybytes, err := readKeyfile(username)
+	if err != nil {
+		return nil, err
+	}
+	return privkeyFromBytes(keybytes)
+}
+*/

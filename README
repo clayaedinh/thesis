@@ -16,3 +16,16 @@ network-up.sh
 
 2) Stop network: 
 network-down.sh
+
+=== GENERATING USERS ===
+Ideally, users should be made using an SDK app that does the following steps:
+- connect to chaincode, send requested username & password
+- chaincode registers the user on peer
+- sdk app enrolls user
+- sdk app receives org msp config
+- (RSA app only) sdk generates public/private key pair
+- (RSA app only) user public key is sent to chaincode & stored in rsa key collection
+
+However, implementing that is currently beyond me. Instead, the gen-testuser.sh script fakes  
+this process on the local machine by using cd to switch back and forth between directories. There
+is currently no mechanism to properly create users on a deployed version of this system.

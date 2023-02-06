@@ -1,4 +1,4 @@
-package application
+package src
 
 import (
 	"bytes"

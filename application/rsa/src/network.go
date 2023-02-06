@@ -1,4 +1,4 @@
-package application
+package src
 
 import (
 	"crypto"
@@ -36,13 +36,13 @@ const chaincodeName = "rsa"
 
 func SetConnectionVariables(newOrg string, newUserId string, endpoint string) {
 	orgName = strings.ToLower(newOrg)
-	userId = cases.Title(language.Und).String(strings.ToLower(newUserId))
+	userId = strings.ToLower(newUserId)
 	mspId = cases.Title(language.Und).String(orgName) + "MSP"
 	orgUrl = orgName + ".example.com"
 	userUrl = userId + "@" + orgUrl
-	cryptoPath = "../test-network/organizations/peerOrganizations/" + orgUrl
-	certPath = cryptoPath + "/users/" + userUrl + "/msp/signcerts/" + userUrl + "-cert.pem"
-	keyPath = cryptoPath + "/users/+" + userUrl + "+/msp/keystore/"
+	cryptoPath = "../../test-network/organizations/peerOrganizations/" + orgUrl
+	certPath = cryptoPath + "/users/" + userUrl + "/msp/signcerts/cert.pem"
+	keyPath = cryptoPath + "/users/" + userUrl + "/msp/keystore/"
 	tlsCertPath = cryptoPath + "/peers/peer0." + orgUrl + "/tls/ca.crt"
 	peerEndpoint = endpoint
 	gatewayPeer = "peer0." + orgUrl

@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/clayaedinh/thesis/chaincode/rsa/chaincode"
+	"github.com/clayaedinh/thesis/chaincode/rsa/src"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
 func main() {
-	assetChaincode, err := contractapi.NewChaincode(&chaincode.SmartContract{})
+	assetChaincode, err := contractapi.NewChaincode(&src.SmartContract{})
 	if err != nil {
 		log.Panicf("Error creating chaincode: %v", err)
 	}
