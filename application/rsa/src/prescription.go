@@ -3,7 +3,9 @@ package src
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
+	"log"
 )
 
 type Prescription struct {
@@ -19,7 +21,7 @@ type Prescription struct {
 	FilledAmount   string  `json:"FilledAmount"`
 }
 
-func EncodePrescription(prescription *Prescription) ([]byte, error) {
+func encodePrescription(prescription *Prescription) ([]byte, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*prescription)
@@ -29,7 +31,7 @@ func EncodePrescription(prescription *Prescription) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func DecodePrescription(encoded []byte) (*Prescription, error) {
+func decodePrescription(encoded []byte) (*Prescription, error) {
 	pres := Prescription{}
 	enc := gob.NewDecoder(bytes.NewReader(encoded))
 	err := enc.Decode(&pres)
@@ -38,3 +40,26 @@ func DecodePrescription(encoded []byte) (*Prescription, error) {
 	}
 	return &pres, nil
 }
+
+func printPrescriptionAsJSON(prescription *Prescription) {
+	pJSON, err := json.Marshal(prescription)
+	if err != nil {
+		log.Panic(fmt.Errorf("Failed to convert prescription to JSON: %v", err))
+	}
+	fmt.Printf("pJSON: %v\n", pJSON)
+}
+
+/*
+func TestPrintPrescriptionJSON(){
+	sample := Prescription{
+	Id:             "prescription_1",
+	DrugBrand: "Paracetamol",
+	DrugDoseSched:  "1 tablet / day",
+	DrugPrice:      20.00,
+	Notes:          "",
+	PatientName:    "Juan de la Cruz",
+	PatientAddress: "Katipunan Ave, QC",
+	PrescriberName: "Doctor Doctor",
+	PrescriberNo:   "12345678"},
+}
+*/

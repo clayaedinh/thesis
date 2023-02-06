@@ -49,10 +49,10 @@ func SetConnectionVariables(newOrg string, newUserId string, peerPort string) {
 }
 
 // newGrpcConnection creates a gRPC connection to the Gateway server.
-func NewGrpcConnection() *grpc.ClientConn {
+func NewGrpcConnection() (*grpc.ClientConn, error) {
 	certificate, err := loadCertificate(tlsCertPath)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to load certificate:%v", err)
 	}
 
 	certPool := x509.NewCertPool()
@@ -61,10 +61,10 @@ func NewGrpcConnection() *grpc.ClientConn {
 
 	connection, err := grpc.Dial(peerEndpoint, grpc.WithTransportCredentials(transportCredentials))
 	if err != nil {
-		panic(fmt.Errorf("failed to create gRPC connection: %w", err))
+		return nil, fmt.Errorf("failed to create gRPC connection: %w", err)
 	}
 
-	return connection
+	return connection, nil
 }
 
 // newIdentity creates a client identity for this Gateway connection using an X.509 certificate.
