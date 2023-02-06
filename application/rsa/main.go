@@ -12,6 +12,7 @@ import (
 
 const (
 	RED    = "\033[0;31m"
+	YELLOW = "\033[1;33m"
 	GREEN  = "\033[0;32m"
 	CYAN   = "\033[0;36m"
 	PURPLE = "\033[0;35m"
@@ -20,7 +21,7 @@ const (
 
 func printHelp() {
 	fmt.Println("")
-	fmt.Printf("%vPrescription Blockchain Thesis Application, RSA version%v\n", GREEN, NC)
+	fmt.Printf("%vPrescription Blockchain Thesis Application, RSA version%v\n", YELLOW, NC)
 	fmt.Println("This application enables users to call chaincode remotely.")
 	fmt.Println("")
 	fmt.Printf("%vUsage%v: ./rsa %v<Method> %v<Method Args>%v\n", GREEN, NC, CYAN, PURPLE, NC)
