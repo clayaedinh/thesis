@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
@@ -34,9 +33,9 @@ var (
 
 const chaincodeName = "rsa"
 
-func SetConnectionVariables(newOrg string, newUserId string, endpoint string) {
-	orgName = strings.ToLower(newOrg)
-	userId = strings.ToLower(newUserId)
+func SetConnectionVariables(newOrg string, newUserId string, peerPort string) {
+	orgName = newOrg
+	userId = newUserId
 	mspId = cases.Title(language.Und).String(orgName) + "MSP"
 	orgUrl = orgName + ".example.com"
 	userUrl = userId + "@" + orgUrl
@@ -44,13 +43,13 @@ func SetConnectionVariables(newOrg string, newUserId string, endpoint string) {
 	certPath = cryptoPath + "/users/" + userUrl + "/msp/signcerts/cert.pem"
 	keyPath = cryptoPath + "/users/" + userUrl + "/msp/keystore/"
 	tlsCertPath = cryptoPath + "/peers/peer0." + orgUrl + "/tls/ca.crt"
-	peerEndpoint = endpoint
+	peerEndpoint = peerPort
 	gatewayPeer = "peer0." + orgUrl
 	channelName = "mychannel"
 }
 
 // newGrpcConnection creates a gRPC connection to the Gateway server.
-func newGrpcConnection() *grpc.ClientConn {
+func NewGrpcConnection() *grpc.ClientConn {
 	certificate, err := loadCertificate(tlsCertPath)
 	if err != nil {
 		panic(err)
@@ -121,16 +120,12 @@ func newSign() identity.Sign {
 	return sign
 }
 
-func ChaincodeConnect() *client.Contract {
-	// The gRPC client connection should be shared by all Gateway connections to this endpoint
-	clientConnection := newGrpcConnection()
-	defer clientConnection.Close()
-
+func DefaultGateway(clientConnection *grpc.ClientConn) (*client.Gateway, error) {
 	id := newIdentity()
 	sign := newSign()
 
 	// Create a Gateway connection for a specific client identity
-	gw, err := client.Connect(
+	return client.Connect(
 		id,
 		client.WithSign(sign),
 		client.WithClientConnection(clientConnection),
@@ -140,11 +135,10 @@ func ChaincodeConnect() *client.Contract {
 		client.WithSubmitTimeout(5*time.Second),
 		client.WithCommitStatusTimeout(1*time.Minute),
 	)
-	if err != nil {
-		panic(err)
-	}
-	defer gw.Close()
 
+}
+
+func SmartContract(gw *client.Gateway) *client.Contract {
 	network := gw.GetNetwork(channelName)
 	return network.GetContract(chaincodeName)
 }

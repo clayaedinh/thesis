@@ -9,21 +9,33 @@ import (
 
 func main() {
 	//get public key
+
 	pubkey, err := src.ReadUserPubkey("user0001")
 	if err != nil {
 		log.Panic(err)
 	}
 	//connection
-	src.SetConnectionVariables("org1", "user0001", "localhost:7051")
-	client := src.ChaincodeConnect()
 
-	err = src.ChainStoreUserPubkey(client, "user0001", pubkey)
+	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
+	clientConnection := src.NewGrpcConnection()
+	defer clientConnection.Close()
+
+	gw, err := src.DefaultGateway(clientConnection)
 	if err != nil {
 		log.Panic(err)
 	}
-	out, err := src.ChainRetrieveUserPubkey(client, "user0001")
+	defer gw.Close()
+
+	contract := src.SmartContract(gw)
+
+	err = src.ChainStoreUserPubkey(contract, "user0002", pubkey)
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("out: %v\n", out)
+	out, err := src.ChainRetrieveUserPubkey(contract, "user0002")
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Print(out)
+
 }
