@@ -12,6 +12,8 @@ APP_RSA_PATH="../application/rsa"
 
 ORG1PORT="localhost:7054"
 ORG2PORT="localhost:8054"
+ORG1PORT_PEER="localhost:7051"
+ORG2PORT_PEER="localhost:8051"
 
 printHelp () {
     echo
@@ -44,9 +46,9 @@ printError(){
 }
 
 createUserFabric () {
-    USER_NUM=$1
-    ORG_NUM=$2
-    ROLE=$3
+    local USER_NUM=$1
+    local ORG_NUM=$2
+    local ROLE=$3
     export PATH=${PWD}/../bin:${PWD}:$PATH
     export FABRIC_CFG_PATH=$PWD/../config/
     export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/
@@ -70,10 +72,23 @@ genKeyPair () {
     openssl pkey -in privkey.pem -out pubkey.pem -pubout
 }
 
+storePublicKey () {
+    local USER_NUM=$1
+    local ORG_NUM=$2
+    local PORT=
+    if [ "$ORG_NUM" = "1" ] || [ $ORG_NUM -eq 1 ]; then
+        PORT=$ORG1PORT_PEER
+    else
+        PORT=$ORG2PORT_PEER
+    fi
+    echo "./rsa -user=user${USER_NUM} -org=org${ORG_NUM} -port=${PORT} storekey user${USER_NUM}"
+    ./rsa -user=Admin -org=org${ORG_NUM} -port=${PORT} storekey user${USER_NUM}
+}
+
 createUser () {
-    USER_NUM=$1
-    ORG_NUM=$2
-    ROLE=$3
+    local USER_NUM=$1
+    local ORG_NUM=$2
+    local ROLE=$3
     echo "${CYAN}creating user${USER_NUM} in org${ORG_NUM} with role ${ROLE}.${NC}"
     cd ${TEST_NETWORK_PATH}
     createUserFabric $USER_NUM $ORG_NUM $ROLE
@@ -82,6 +97,7 @@ createUser () {
     cd rsakeys
     genKeyPair $USER_NUM
     cd ../..
+    storePublicKey $USER_NUM $ORG_NUM
 }
 
 
