@@ -66,8 +66,8 @@ genKeyPair () {
     USERNAME="user${1}"
     [ ! -d $USERNAME ] && mkdir $USERNAME
     cd $USERNAME
-    openssl genrsa -out private.key 1024
-    openssl req -new -x509 -key private.key -out publickey.cer -subj "/C=PH/ST=NCR/L=Quezon City/O=Ateneo de Manila University/OU=./CN=${USERNAME}"
+    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:1024
+    openssl pkey -in privkey.pem -out pubkey.pem -pubout
 }
 
 createUser () {
