@@ -53,6 +53,10 @@ func printHelp() {
 	fmt.Printf("./rsa %vgetkey%v <username>\n", CYAN, NC)
 	fmt.Println("Retrieves the RSA public key of the given username from the ledger.")
 	fmt.Println("")
+	fmt.Printf("./rsa %vcreatep%v <json>\n", CYAN, NC)
+	fmt.Println("Creates a prescription with json data. JSON follows this format:")
+	fmt.Println(src.PrintEmptyPrescriptionJSON())
+	fmt.Println("")
 
 }
 func main() {
@@ -66,6 +70,7 @@ func main() {
 	flagOrg := flag.String("org", "org1", FLAG_H_ORG)
 	flagUser := flag.String("user", "Admin", FLAG_H_USER)
 	flagPort := flag.String("port", "localhost:7051", FLAG_H_PORT)
+
 	flag.Parse()
 
 	//If application is not printing help, it will be interacting with chaincode
@@ -85,15 +90,15 @@ func main() {
 	contract := src.SmartContract(gw)
 
 	//We now check which chaincode function is being called
-
 	if flag.Arg(0) == "storekey" {
 		storekey(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "getkey" {
 		getkey(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "testprint" {
+		src.TestPrintPrescriptionJSON()
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
-
 }
 
 func storekey(contract *client.Contract, username string) {
@@ -115,4 +120,15 @@ func getkey(contract *client.Contract, username string) {
 	}
 	fmt.Print(out)
 	fmt.Printf("\n%vKey retrieved successfully for user %v%v\n", GREEN, username, NC)
+}
+
+func createp(contract *client.Contract, jsonstring string) {
+	prescription, err := src.PrescriptionFromCmdInput(jsonstring)
+	if err != nil {
+		log.Panic(err)
+	}
+	err = src.ChainCreatePrescriptionSimple(contract, prescription)
+	if err != nil {
+		log.Panic(err)
+	}
 }

@@ -142,3 +142,11 @@ func SmartContract(gw *client.Gateway) *client.Contract {
 	network := gw.GetNetwork(channelName)
 	return network.GetContract(chaincodeName)
 }
+
+func getCurrentUser() string {
+	return userId
+}
+
+func getCurrentOrg() string {
+	return orgName
+}

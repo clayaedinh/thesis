@@ -30,3 +30,7 @@ func (s *SmartContract) RetrieveUserRSAPubkey(ctx contractapi.TransactionContext
 	b64pubkey := base64.StdEncoding.EncodeToString(pubkey)
 	return b64pubkey, nil
 }
+
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, b64encrypted string) error {
+
+}

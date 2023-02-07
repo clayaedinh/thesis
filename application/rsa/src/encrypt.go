@@ -1,8 +1,11 @@
 package src
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -29,7 +32,7 @@ func ReadUserPrivkey(username string) ([]byte, error) {
 	return readKeyfile(pathname)
 }
 
-func ParsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
+func parsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
 	parseOut, _ := x509.ParsePKIXPublicKey(arr)
 	if parseOut == nil {
 		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
@@ -38,13 +41,41 @@ func ParsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-func ParsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
+func parsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
 	parseOut, _ := x509.ParsePKCS8PrivateKey(arr)
 	if parseOut == nil {
 		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
 	}
 	key := parseOut.(*rsa.PrivateKey)
 	return key, nil
+}
+
+func keyFromChainRetrieval(arr []byte) (*rsa.PublicKey, error) {
+	encoded, err := base64.StdEncoding.DecodeString(string(arr))
+	if err != nil {
+		return nil, fmt.Errorf("Base64 decoding of key failed: %v", nil)
+	}
+	return parsePubkeyBytes(encoded)
+}
+
+// From https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
+func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
+	hash := sha256.New()
+	ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, pub, msg, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error encrypting bytes : %v", err)
+	}
+	return ciphertext, nil
+}
+
+// From https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
+func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
+	hash := sha256.New()
+	msg, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error decyrypting bytes : %v", err)
+	}
+	return msg, nil
 }
 
 /*

@@ -13,7 +13,7 @@ APP_RSA_PATH="../application/rsa"
 ORG1PORT="localhost:7054"
 ORG2PORT="localhost:8054"
 ORG1PORT_PEER="localhost:7051"
-ORG2PORT_PEER="localhost:8051"
+ORG2PORT_PEER="localhost:9051"
 
 printHelp () {
     echo
@@ -102,9 +102,9 @@ createUser () {
 
 
 createUsers () {
-     createUser "0001" 1 "DOCTOR"
-     createUser "0002" 1 "PATIENT"
-     createUser "0003" 2 "PHARMA"  
+    createUser "0001" 1 "DOCTOR"
+    createUser "0002" 1 "PATIENT"
+    createUser "0003" 2 "PHARMA"  
 }
 
 if [ "$1" = "help" ] || [ $# -eq 0 ]; then
