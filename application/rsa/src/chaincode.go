@@ -20,15 +20,16 @@ func ChainStoreUserPubkey(contract *client.Contract, username string, pubkey []b
 func ChainRetrieveUserPubkey(contract *client.Contract, username string) ([]byte, error) {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", username)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error: failed to retrieve pubkey of user %v: %v", username, err)
 	}
 	if evaluateResult == nil {
 		return nil, fmt.Errorf("Error: pubkey retrieved for user '%v' is nil", username)
 	}
-	return evaluateResult, nil
+	return base64.StdEncoding.DecodeString(string(evaluateResult))
 }
 
 func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Prescription) error {
+	fmt.Printf("prescription: %v\n", prescription)
 
 	//Get hash(prescription_id + userid_shared_to), used as key for ledger private collection
 	tag_raw := sha256.Sum256([]byte(prescription.Id + getCurrentUser()))
@@ -37,15 +38,16 @@ func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Pres
 	// Encode Prescription to Bytes
 	encoded, err := encodePrescription(prescription)
 	if err != nil {
-		return fmt.Errorf("Failed to encode prescription: ", err)
+		return fmt.Errorf("Failed to encode prescription: %v", err)
 	}
 
 	//Obtain Public Key of current user
-	rawbytes, err := ChainRetrieveUserPubkey(contract, getCurrentUser())
+	rawkey, err := ChainRetrieveUserPubkey(contract, getCurrentUser())
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve public key of user %v: %v", getCurrentUser(), err)
 	}
-	pubkey, err := keyFromChainRetrieval(rawbytes)
+	//pubkey, err := keyFromChainRetrieval(rawbytes)
+	pubkey, err := parsePubkeyBytes(rawkey)
 	if err != nil {
 		return fmt.Errorf("Failed to parse public key: %v", err)
 	}
@@ -55,25 +57,57 @@ func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Pres
 	if err != nil {
 		return fmt.Errorf("Failed to encrypt prescription: %v", err)
 	}
-	// Encode data as base64
+
+	//Encode data as base64
 	b64encrypted := base64.StdEncoding.EncodeToString(encrypted)
+	_, err = contract.SubmitTransaction("CreatePrescriptionSimple", tag, b64encrypted)
 
 	_, err = contract.SubmitTransaction("CreatePrescriptionSimple", tag, b64encrypted)
+
+	if err != nil {
+		return fmt.Errorf("CreatePrescriptionSimple smart contract failed: %v", err)
+	}
 	return nil
 
 }
 
-/*
-func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Prescription) error {
-	// Encode Prescription
-	encoded, err := encodePrescription(prescription)
-	if err != nil {
-		return fmt.Errorf("Failed to encode prescription: ", err)
-	}
-	//Get pubkey of current user
+func ChainReadPrescription(contract *client.Contract, prescriptionId string) (*Prescription, error) {
+	// get hash(prescription_id + current_userid)
+	tag_raw := sha256.Sum256([]byte(prescriptionId + getCurrentUser()))
+	tag := string(tag_raw[:])
 
-	//step 3: retrieve pubkey of other user
-	//step 4: encrypt
-	//optional step 5: base64
+	// retrieve from smart contract
+	pdata, err := contract.EvaluateTransaction("ReadPrescription", tag)
+	if err != nil {
+		return nil, fmt.Errorf("ReadPrescription smart contract failed: %v", err)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(string(pdata))
+	if err != nil {
+		return nil, fmt.Errorf("Base64 failed to decrypt prescription: %v", err)
+	}
+
+	//Obtain Private Key of current user
+	rawkey, err := ReadUserPrivkey(getCurrentUser())
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve private key of user %v: %v", getCurrentUser(), err)
+	}
+	//pubkey, err := keyFromChainRetrieval(rawkey)
+	privkey, err := parsePrivkeyBytes(rawkey)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse private key of user %v: %v", getCurrentUser(), err)
+	}
+
+	// Decrypt data with current user's public key
+	decrypted, err := decryptBytes(decoded, privkey)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to encrypt prescription: %v", err)
+	}
+
+	// Decode Prescription to Bytes
+	prescription, err := decodePrescription(decrypted)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode prescription: %v", err)
+	}
+	return prescription, nil
 }
-*/

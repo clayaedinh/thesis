@@ -23,7 +23,7 @@ printHelp () {
     echo
     echo "Available Modes"
     echo
-    echo "${CYAN}user${NC} - creates single user"
+    echo "${CYAN}user${NC} - creates single user with standard format"
     echo "Syntax: sh gen-testuser.sh user <user_num> <org_num> <role>"
     echo "Roles: DOCTOR, PATIENT, PHARMA"
     echo "Example: sh gen-testuser.sh user 0001 1 DOCTOR"
@@ -39,6 +39,14 @@ printHelp () {
     echo "For both modes: In addition to the Fabric CA signatures found in test-network, RSA keys are"
     echo "also generated in keys/user_000x."
     echo
+    echo "Other Modes"
+    echo
+    echo "${CYAN}deletekeys${NC} - delete keys store in /rsakeys"
+    echo "Syntax: sh gen-testuser.sh deletekeys"
+    echo 
+    echo "${CYAN}admin${NC} - creates keys for a user named Admin"
+    echo "Syntax: sh gen-testuser.sh admin"
+    echo 
 }
 
 printError(){
@@ -68,8 +76,9 @@ genKeyPair () {
     USERNAME="user${1}"
     [ ! -d $USERNAME ] && mkdir $USERNAME
     cd $USERNAME
-    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:1024
+    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:2048
     openssl pkey -in privkey.pem -out pubkey.pem -pubout
+    cd ..
 }
 
 storePublicKey () {
@@ -96,15 +105,32 @@ createUser () {
     [ ! -d rsakeys ] && mkdir rsakeys
     cd rsakeys
     genKeyPair $USER_NUM
-    cd ../..
+    cd ..
     storePublicKey $USER_NUM $ORG_NUM
 }
 
+createAdmin() {
+    echo "${CYAN}creating admin in org1...${NC}"
+    cd ${APP_RSA_PATH}
+    [ ! -d rsakeys ] && mkdir rsakeys
+    cd rsakeys
+    USERNAME="Admin"
+    [ ! -d $USERNAME ] && mkdir $USERNAME
+    cd $USERNAME
+    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:2048
+    openssl pkey -in privkey.pem -out pubkey.pem -pubout
+    cd ../..
+    ./rsa -user=Admin -org=org1 -port=localhost:7051 storekey Admin
+}
 
 createUsers () {
     createUser "0001" 1 "DOCTOR"
     createUser "0002" 1 "PATIENT"
     createUser "0003" 2 "PHARMA"  
+}
+
+deleteKeys () {
+    rm -r rsakeys
 }
 
 if [ "$1" = "help" ] || [ $# -eq 0 ]; then
@@ -113,6 +139,10 @@ elif [ "$1" = "user" ]; then
     createUser $2 $3 $4
 elif [ "$1" = "samples" ]; then
     createUsers
+elif [ "$1" = "deletekeys" ]; then
+    deleteKeys
+elif [ "$1" = "admin" ]; then
+    createAdmin
 elif [ $# -gt 0 ]; then
     printError
 fi

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -53,9 +52,11 @@ func printHelp() {
 	fmt.Printf("./rsa %vgetkey%v <username>\n", CYAN, NC)
 	fmt.Println("Retrieves the RSA public key of the given username from the ledger.")
 	fmt.Println("")
-	fmt.Printf("./rsa %vcreatep%v <json>\n", CYAN, NC)
-	fmt.Println("Creates a prescription with json data. JSON follows this format:")
-	fmt.Println(src.PrintEmptyPrescriptionJSON())
+	fmt.Printf("./rsa %vcreatep%v <drug_brand> <drug_sched> <drug_price> <patient_name> <patient_address> <doctor_name> <doctor_no>\n", CYAN, NC)
+	fmt.Println("Creates a prescription with the above arguments.")
+	fmt.Println("")
+	fmt.Printf("./rsa %vreadp%v <id>\n", CYAN, NC)
+	fmt.Println("Reads a prescription with the given prescription id.")
 	fmt.Println("")
 
 }
@@ -76,26 +77,33 @@ func main() {
 	//If application is not printing help, it will be interacting with chaincode
 	//So start connection
 	src.SetConnectionVariables(*flagOrg, *flagUser, *flagPort)
+	src.PrintConnectionVariables()
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer clientConnection.Close()
 
 	gw, err := src.DefaultGateway(clientConnection)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
 
 	//We now check which chaincode function is being called
 	if flag.Arg(0) == "storekey" {
+		checkEnoughArgs(2)
 		storekey(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "getkey" {
+		checkEnoughArgs(2)
 		getkey(contract, flag.Arg(1))
-	} else if flag.Arg(0) == "testprint" {
-		src.TestPrintPrescriptionJSON()
+	} else if flag.Arg(0) == "createp" {
+		checkEnoughArgs(8)
+		createp(contract, flag.Args())
+	} else if flag.Arg(0) == "readp" {
+		checkEnoughArgs(2)
+		readp(contract, flag.Arg(1))
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -104,11 +112,11 @@ func main() {
 func storekey(contract *client.Contract, username string) {
 	pubkey, err := src.ReadUserPubkey(username)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	err = src.ChainStoreUserPubkey(contract, username, pubkey)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	fmt.Printf("%vKey stored successfully for user %v%v\n", GREEN, username, NC)
 }
@@ -116,19 +124,30 @@ func storekey(contract *client.Contract, username string) {
 func getkey(contract *client.Contract, username string) {
 	out, err := src.ChainRetrieveUserPubkey(contract, username)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	fmt.Print(out)
 	fmt.Printf("\n%vKey retrieved successfully for user %v%v\n", GREEN, username, NC)
 }
 
-func createp(contract *client.Contract, jsonstring string) {
-	prescription, err := src.PrescriptionFromCmdInput(jsonstring)
+func createp(contract *client.Contract, args []string) {
+	prescription := src.PrescriptionFromCmdArgs(args[1], args[2], args[3], args[4], args[5], args[6], args[7])
+	err := src.ChainCreatePrescriptionSimple(contract, prescription)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
-	err = src.ChainCreatePrescriptionSimple(contract, prescription)
+}
+
+func readp(contract *client.Contract, prescriptionId string) {
+	prescription, err := src.ChainReadPrescription(contract, prescriptionId)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
+	}
+	fmt.Printf("prescription: %v\n", prescription)
+}
+
+func checkEnoughArgs(expected int) {
+	if len(flag.Args()) < expected {
+		panic(fmt.Errorf("%vMethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options.\n", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
 	}
 }

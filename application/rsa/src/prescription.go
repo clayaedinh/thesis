@@ -3,7 +3,6 @@ package src
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -11,27 +10,25 @@ import (
 )
 
 type Prescription struct {
-	Id             string  `json:"Id"`
-	DrugBrand      string  `json:"DrugBrand"`
-	DrugDoseSched  string  `json:"DrugDoseSched"`
-	DrugPrice      float64 `json:"DrugPrice"`
-	PatientName    string  `json:"PatientName"`
-	PatientAddress string  `json:"PatientAddress"`
-	PrescriberName string  `json:"PrescriberName"`
-	PrescriberNo   string  `json:"PrescriberNo"`
-	Notes          string  `json:"Notes"`
-	FilledAmount   string  `json:"FilledAmount"`
+	Id             string `json:"Id"`
+	DrugBrand      string `json:"DrugBrand"`
+	DrugDoseSched  string `json:"DrugDoseSched"`
+	DrugPrice      string `json:"DrugPrice"`
+	PatientName    string `json:"PatientName"`
+	PatientAddress string `json:"PatientAddress"`
+	PrescriberName string `json:"PrescriberName"`
+	PrescriberNo   string `json:"PrescriberNo"`
+	FilledAmount   string `json:"FilledAmount"`
 }
 
 type PrescriptionCmdInput struct {
-	DrugBrand      string  `json:"DrugBrand"`
-	DrugDoseSched  string  `json:"DrugDoseSched"`
-	DrugPrice      float64 `json:"DrugPrice"`
-	PatientName    string  `json:"PatientName"`
-	PatientAddress string  `json:"PatientAddress"`
-	PrescriberName string  `json:"PrescriberName"`
-	PrescriberNo   string  `json:"PrescriberNo"`
-	Notes          string  `json:"Notes"`
+	DrugBrand      string `json:"DrugBrand"`
+	DrugDoseSched  string `json:"DrugDoseSched"`
+	DrugPrice      string `json:"DrugPrice"`
+	PatientName    string `json:"PatientName"`
+	PatientAddress string `json:"PatientAddress"`
+	PrescriberName string `json:"PrescriberName"`
+	PrescriberNo   string `json:"PrescriberNo"`
 }
 
 func encodePrescription(prescription *Prescription) ([]byte, error) {
@@ -54,66 +51,25 @@ func decodePrescription(encoded []byte) (*Prescription, error) {
 	return &pres, nil
 }
 
-func PrescriptionFromCmdInput(jsonstring string) (*Prescription, error) {
-	var cmdInput *PrescriptionCmdInput
-	err := json.Unmarshal([]byte(jsonstring), cmdInput)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse json string into prescription: %v", err)
-	}
+func genPrescriptionId() string {
+	pid := fmt.Sprint(rand.Intn(math.MaxInt32))
+	log.Printf("Generated prescription id: %v", pid)
+	return pid
+}
 
-	prescription_id := "prescription_" + string(rand.Intn(math.MaxInt32))
+func PrescriptionFromCmdArgs(drugBrand string, drugSched string, drugPrice string,
+	patientName string, patientAddress string, prescriberName string, prescriberNo string) *Prescription {
+
 	prescription := Prescription{
-		Id:             prescription_id,
-		DrugBrand:      cmdInput.DrugBrand,
-		DrugDoseSched:  cmdInput.DrugDoseSched,
-		DrugPrice:      cmdInput.DrugPrice,
-		PatientName:    cmdInput.PatientName,
-		PatientAddress: cmdInput.PatientName,
-		PrescriberName: cmdInput.PrescriberName,
-		PrescriberNo:   cmdInput.PrescriberNo,
-		Notes:          cmdInput.Notes,
-		FilledAmount:   "none",
+		Id:             genPrescriptionId(),
+		DrugBrand:      drugBrand,
+		DrugDoseSched:  drugSched,
+		DrugPrice:      drugPrice,
+		PatientName:    patientName,
+		PatientAddress: patientAddress,
+		PrescriberName: prescriberName,
+		PrescriberNo:   prescriberNo,
 	}
-	return &prescription, nil
+	return &prescription
 
-}
-
-func TestPrintPrescriptionJSON() {
-	sample := PrescriptionCmdInput{
-		DrugBrand:      "Paracetamol",
-		DrugDoseSched:  "1 tablet / day",
-		DrugPrice:      20.00,
-		PatientName:    "Juan de la Cruz",
-		PatientAddress: "Katipunan Ave, QC",
-		PrescriberName: "Doctor Doctor",
-		PrescriberNo:   "12345678",
-		Notes:          ""}
-	fmt.Println("RAW STRUCT")
-	fmt.Printf("sample: %v\n", sample)
-	fmt.Println("JSON")
-
-	pJSON, err := json.Marshal(sample)
-	if err != nil {
-		log.Panic(fmt.Errorf("Failed to convert prescription to JSON: %v", err))
-	}
-	fmt.Printf("pJSON: %v\n", string(pJSON))
-
-}
-
-func PrintEmptyPrescriptionJSON() string {
-	sample := PrescriptionCmdInput{
-		DrugBrand:      "",
-		DrugDoseSched:  "",
-		DrugPrice:      0,
-		PatientName:    "",
-		PatientAddress: "",
-		PrescriberName: "",
-		PrescriberNo:   "",
-		Notes:          ""}
-
-	pJSON, err := json.Marshal(sample)
-	if err != nil {
-		log.Panic(fmt.Errorf("Failed to convert prescription to JSON: %v", err))
-	}
-	return string(pJSON)
 }

@@ -31,6 +31,28 @@ func (s *SmartContract) RetrieveUserRSAPubkey(ctx contractapi.TransactionContext
 	return b64pubkey, nil
 }
 
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, b64encrypted string) error {
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, tag string, pdata string) error {
 
+	decrypted, err := base64.StdEncoding.DecodeString(pdata)
+	if err != nil {
+		return fmt.Errorf("Base64 failed to decrypt given prescription: %v", err)
+	}
+
+	// Add Prescription to Chain
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, tag, decrypted)
+	if err != nil {
+		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+	}
+	return nil
+}
+
+func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, tag string) (string, error) {
+	pdata, err := ctx.GetStub().GetPrivateData(collectionPrescription, tag)
+	if err != nil {
+		return "", fmt.Errorf("Failed to read presscription: %v", err)
+	}
+	if pdata == nil {
+		return "", fmt.Errorf("No prescription to read with given tag: %v", err)
+	}
+	return base64.StdEncoding.EncodeToString(pdata), nil
 }

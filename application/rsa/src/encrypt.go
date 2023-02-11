@@ -50,6 +50,7 @@ func parsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
+// Remove this if b64 is not used!!!
 func keyFromChainRetrieval(arr []byte) (*rsa.PublicKey, error) {
 	encoded, err := base64.StdEncoding.DecodeString(string(arr))
 	if err != nil {
