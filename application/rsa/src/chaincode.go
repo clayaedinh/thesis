@@ -1,9 +1,11 @@
 package src
 
 import (
+	"bytes"
 	"context"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/gob"
 	"errors"
 	"fmt"
 
@@ -207,21 +209,34 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 	return nil
 }
 
-/*
+// If this works I will be amazed
 func ChainReportView(contract *client.Contract) error {
 	pdatas, err := contract.EvaluateTransaction("GetAllPrescriptions")
 	if err != nil {
 		return err
 	}
 
-	for _, pdata := range pdatas {
-		prescription, err := unpackagePrescription(pdata)
+	//I have no idea if this will work
+	prescriptions := [][]byte{}
+	enc := gob.NewDecoder(bytes.NewReader(pdatas))
+	err = enc.Decode(&prescriptions)
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		return fmt.Errorf("Failed to package prescriptions for transport: %v", err)
+	}
+
+	for _, pdata := range prescriptions {
+		prescription, err := unpackagePrescription(string(pdata))
 		if err != nil {
 			return err
 		}
+		fmt.Printf("prescription: %v\n", prescription)
 	}
+	return nil
 }
-*/
 
 func ChaincodeParseError(err error) error {
 	var errorString string

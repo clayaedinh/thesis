@@ -1,6 +1,10 @@
 package src
 
 import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
@@ -31,7 +35,7 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	return readers, nil
 }
 
-func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) ([][]byte, error) {
+func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) ([]byte, error) {
 	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionReportReaders, "", "")
 	if err != nil {
 		return nil, err
@@ -46,5 +50,14 @@ func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextIn
 		}
 		assets = append(assets, asset.Value)
 	}
-	return assets, nil
+
+	//I have no idea if this will work
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(assets)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to package prescriptions for transport: %v", err)
+	}
+
+	return buf.Bytes(), nil
 }
