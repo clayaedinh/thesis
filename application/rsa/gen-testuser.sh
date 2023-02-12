@@ -111,7 +111,6 @@ createUser () {
 
 createAdmin() {
     echo "${CYAN}creating admin in org1...${NC}"
-    cd ${APP_RSA_PATH}
     [ ! -d rsakeys ] && mkdir rsakeys
     cd rsakeys
     USERNAME="Admin"

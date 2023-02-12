@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 type Prescription struct {
@@ -42,6 +43,7 @@ func decodePrescription(encoded []byte) (*Prescription, error) {
 }
 
 func genPrescriptionId() uint64 {
+	rand.Seed(time.Now().UnixNano())
 	pid := rand.Uint64()
 	log.Printf("Generated prescription id: %v", pid)
 	return pid

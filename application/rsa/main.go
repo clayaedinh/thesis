@@ -104,6 +104,8 @@ func main() {
 	} else if flag.Arg(0) == "readp" {
 		checkEnoughArgs(2)
 		readp(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "test" {
+		src.ChainTestMethod(contract)
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -135,6 +137,8 @@ func createp(contract *client.Contract, args []string) {
 	err := src.ChainCreatePrescriptionSimple(contract, prescription)
 	if err != nil {
 		panic(err)
+	} else {
+		fmt.Printf("%vCreate Prescription Successful%v\n", GREEN, NC)
 	}
 }
 

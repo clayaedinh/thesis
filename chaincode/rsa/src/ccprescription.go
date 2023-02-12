@@ -1,23 +1,27 @@
 package src
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-func (s *SmartContract) CreatePrescriptionSimple(ctx contractapi.TransactionContextInterface, prescription_id string, b64encrypted string) error {
-	// Decode base64-encoded encrypted data
-	encrypted, err := base64.StdEncoding.DecodeString(b64encrypted)
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, tag string, pdata string) error {
+	// Add Prescription to Chain
+	err := ctx.GetStub().PutPrivateData(collectionPrescription, tag, []byte(pdata))
 	if err != nil {
-		return fmt.Errorf("Base64 decoding of RSA pubkey failed: %v", err)
-	}
-
-	// Add Prescription
-	err = ctx.GetStub().PutPrivateData(collectionPrescription, prescription_id, encrypted)
-	if err != nil {
-		return fmt.Errorf("failed to add prescription access list %v to private data: %v", prescription_id, err)
+		return fmt.Errorf("Failed to add prescription to private data: %v", err)
 	}
 	return nil
+}
+
+func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, tag string) (string, error) {
+	pdata, err := ctx.GetStub().GetPrivateData(collectionPrescription, tag)
+	if err != nil {
+		return "", fmt.Errorf("Failed to read presscription: %v", err)
+	}
+	if pdata == nil {
+		return "", fmt.Errorf("No prescription to read with given tag: %v", err)
+	}
+	return string(pdata), nil
 }
