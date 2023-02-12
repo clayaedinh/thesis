@@ -23,15 +23,6 @@ func readKeyfile(filename string) ([]byte, error) {
 	return block.Bytes, nil
 }
 
-func ReadUserPubkey(username string) ([]byte, error) {
-	pathname := "rsakeys/" + username + "/pubkey.pem"
-	return readKeyfile(pathname)
-}
-func ReadUserPrivkey(username string) ([]byte, error) {
-	pathname := "rsakeys/" + username + "/privkey.pem"
-	return readKeyfile(pathname)
-}
-
 func parsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
 	parseOut, _ := x509.ParsePKIXPublicKey(arr)
 	if parseOut == nil {
@@ -48,6 +39,40 @@ func parsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
 	}
 	key := parseOut.(*rsa.PrivateKey)
 	return key, nil
+}
+
+func localPubkeyBytes(username string) ([]byte, error) {
+	pathname := "rsakeys/" + username + "/pubkey.pem"
+	return readKeyfile(pathname)
+}
+
+func localPubkey(username string) (*rsa.PublicKey, error) {
+	pbytes, err := localPubkeyBytes(username)
+	if err != nil {
+		return nil, err
+	}
+	pubkey, err := parsePubkeyBytes(pbytes)
+	if err != nil {
+		return nil, err
+	}
+	return pubkey, nil
+}
+
+func localPrivkeyBytes(username string) ([]byte, error) {
+	pathname := "rsakeys/" + username + "/privkey.pem"
+	return readKeyfile(pathname)
+}
+
+func localPrivkey(username string) (*rsa.PrivateKey, error) {
+	pbytes, err := localPrivkeyBytes(username)
+	if err != nil {
+		return nil, err
+	}
+	privkey, err := parsePrivkeyBytes(pbytes)
+	if err != nil {
+		return nil, err
+	}
+	return privkey, nil
 }
 
 // Remove this if b64 is not used!!!

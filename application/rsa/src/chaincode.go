@@ -2,7 +2,7 @@ package src
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/rsa"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -12,16 +12,25 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func ChainStoreUserPubkey(contract *client.Contract, username string, pubkey []byte) error {
+// ========================================
+// RSA Key Management
+// ========================================
+
+func ChainStoreLocalPubkey(contract *client.Contract, username string) error {
+	pubkey, err := localPrivkeyBytes(username)
+	if err != nil {
+		return err
+	}
+
 	b64pubkey := base64.StdEncoding.EncodeToString(pubkey)
-	_, err := contract.SubmitTransaction("StoreUserRSAPubkey", username, b64pubkey)
+	_, err = contract.SubmitTransaction("StoreUserRSAPubkey", username, b64pubkey)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
 	return nil
 }
 
-func ChainRetrieveUserPubkey(contract *client.Contract, username string) ([]byte, error) {
+func ChainRetrievePubkey(contract *client.Contract, username string) (*rsa.PublicKey, error) {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", username)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
@@ -29,41 +38,40 @@ func ChainRetrieveUserPubkey(contract *client.Contract, username string) ([]byte
 	if evaluateResult == nil {
 		return nil, fmt.Errorf("Error: pubkey retrieved for user '%v' is nil", username)
 	}
-	return base64.StdEncoding.DecodeString(string(evaluateResult))
+	decoded, err := base64.StdEncoding.DecodeString(string(evaluateResult))
+	if err != nil {
+		return nil, fmt.Errorf("Base64 decoding failed on retrieved pubkey: %v", err)
+	}
+	return parsePubkeyBytes(decoded)
 }
 
-func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Prescription) error {
-	//Get hash(prescription_id + userid_shared_to), used as key for ledger private collection
-	tag_raw := sha256.Sum256([]byte(fmt.Sprintf("%v", prescription.Id) + getCurrentUser()))
-	tag := base64.StdEncoding.EncodeToString(tag_raw[:])
+// =============================================
+// Create Prescription
+// Creates a completely BLANK prescription
+// =============================================
 
-	// Encode Prescription to Bytes
-	encoded, err := encodePrescription(prescription)
+func ChainCreatePrescription(contract *client.Contract) error {
+	// Create a new, blank prescription
+	var prescription Prescription
+
+	// Assign an id to the prescription
+	prescription.Id = genPrescriptionId()
+
+	// Generate a tag for the prescription
+	tag := genPrescriptionTag(fmt.Sprintf("%v", prescription.Id), getCurrentUser())
+
+	// Get current user pubkey
+	pubkey, err := localPubkey(getCurrentUser())
 	if err != nil {
-		return fmt.Errorf("Failed to encode prescription: %v", err)
+		return err
+	}
+	// package the prescription
+	b64encrypted, err := packagePrescription(pubkey, &prescription)
+	if err != nil {
+		return err
 	}
 
-	//Obtain Public Key of current user
-	rawkey, err := ChainRetrieveUserPubkey(contract, getCurrentUser())
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve public key of user %v: %v", getCurrentUser(), err)
-	}
-	//pubkey, err := keyFromChainRetrieval(rawbytes)
-	pubkey, err := parsePubkeyBytes(rawkey)
-	if err != nil {
-		return fmt.Errorf("Failed to parse public key: %v", err)
-	}
-
-	//Encrypt data with current user's public key
-	encrypted, err := encryptBytes(encoded, pubkey)
-	if err != nil {
-		return fmt.Errorf("Failed to encrypt prescription: %v", err)
-	}
-
-	//Encode data as base64
-	b64encrypted := base64.StdEncoding.EncodeToString(encrypted)
-
-	_, err = contract.SubmitTransaction("CreatePrescription", tag, b64encrypted)
+	_, err = contract.SubmitTransaction("SavePrescription", tag, b64encrypted)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
@@ -71,45 +79,87 @@ func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Pres
 
 }
 
-func ChainReadPrescription(contract *client.Contract, prescriptionId string) (*Prescription, error) {
-	// get hash(prescription_id + current_userid)
-	tag_raw := sha256.Sum256([]byte(prescriptionId + getCurrentUser()))
-	tag := base64.StdEncoding.EncodeToString(tag_raw[:])
+func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
+	tag := genPrescriptionTag(fmt.Sprintf("%v", update.Id), getCurrentUser())
+	pubkey, err := localPubkey(getCurrentUser())
+	if err != nil {
+		return err
+	}
+	b64encrypted, err := packagePrescription(pubkey, update)
+	if err != nil {
+		return err
+	}
 
-	// retrieve from smart contract
+	_, err = contract.SubmitTransaction("SavePrescription", tag, b64encrypted)
+	if err != nil {
+		return ChaincodeParseError(err)
+	}
+	return nil
+}
+
+func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
+	// Get Tag of prescription to read
+	tag := genPrescriptionTag(pid, getCurrentUser())
+
+	// Retrieve from smart contract
 	pdata, err := contract.EvaluateTransaction("ReadPrescription", tag)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
 	}
+	// Unpackage and return the prescription
+	return unpackagePrescription(string(pdata))
+}
 
-	decoded, err := base64.StdEncoding.DecodeString(string(pdata))
+func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
+	//Retrieve prescription with current user credentials
+	prescription, err := ChainReadPrescription(contract, pid)
 	if err != nil {
-		return nil, fmt.Errorf("Base64 failed to decrypt prescription: %v", err)
+		return err
+	}
+	//Request pubkey from username to share to
+	otherPubkey, err := ChainRetrievePubkey(contract, username)
+	if err != nil {
+		return err
+	}
+	//Re-encrypt the prescription with the new user credentials
+	b64encrypted, err := packagePrescription(otherPubkey, prescription)
+	if err != nil {
+		return err
+	}
+	tag := genPrescriptionTag(pid, username)
+
+	//Save prescription with tag
+	_, err = contract.SubmitTransaction("SavePrescription", tag, b64encrypted)
+	if err != nil {
+		return ChaincodeParseError(err)
+	}
+	return nil
+}
+
+func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
+	prescription, err := ChainReadPrescription(contract, pid)
+	if err != nil {
+		return fmt.Errorf("Failed to read prescription %v : %v", pid, err)
+	}
+	prescription.PiecesFilled = newfill
+
+	tag := genPrescriptionTag(pid, getCurrentUser())
+
+	pubkey, err := localPubkey(getCurrentUser())
+	if err != nil {
+		return err
 	}
 
-	//Obtain Private Key of current user
-	rawkey, err := ReadUserPrivkey(getCurrentUser())
+	b64encrypted, err := packagePrescription(pubkey, prescription)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve private key of user %v: %v", getCurrentUser(), err)
-	}
-	//pubkey, err := keyFromChainRetrieval(rawkey)
-	privkey, err := parsePrivkeyBytes(rawkey)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse private key of user %v: %v", getCurrentUser(), err)
+		return err
 	}
 
-	// Decrypt data with current user's public key
-	decrypted, err := decryptBytes(decoded, privkey)
+	_, err = contract.SubmitTransaction("SavePrescription", tag, b64encrypted)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to encrypt prescription: %v", err)
+		return ChaincodeParseError(err)
 	}
-
-	// Decode Prescription to Bytes
-	prescription, err := decodePrescription(decrypted)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode prescription: %v", err)
-	}
-	return prescription, nil
+	return nil
 }
 
 func ChaincodeParseError(err error) error {

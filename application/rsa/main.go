@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/clayaedinh/thesis/application/rsa/src"
@@ -52,7 +53,7 @@ func printHelp() {
 	fmt.Printf("./rsa %vgetkey%v <username>\n", CYAN, NC)
 	fmt.Println("Retrieves the RSA public key of the given username from the ledger.")
 	fmt.Println("")
-	fmt.Printf("./rsa %vcreatep%v <brand> <dosage> <patient_name> <patient_address> <doctor_name> <doctor_prc> <pieces_total>\n", CYAN, NC)
+	fmt.Printf("./rsa %vupdatep%v <brand> <dosage> <patient_name> <patient_address> <doctor_name> <doctor_prc> <pieces_total>\n", CYAN, NC)
 	fmt.Println("Creates a prescription with the above arguments.")
 	fmt.Println("")
 	fmt.Printf("./rsa %vreadp%v <id>\n", CYAN, NC)
@@ -99,11 +100,19 @@ func main() {
 		checkEnoughArgs(2)
 		getkey(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "createp" {
-		checkEnoughArgs(8)
-		createp(contract, flag.Args())
+		createp(contract)
+	} else if flag.Arg(0) == "updatep" {
+		checkEnoughArgs(9)
+		updatep(contract, flag.Args())
+	} else if flag.Arg(0) == "setfillp" {
+		checkEnoughArgs(3)
+		setfillp(contract, flag.Arg(1), flag.Arg(2))
 	} else if flag.Arg(0) == "readp" {
 		checkEnoughArgs(2)
 		readp(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "sharep" {
+		checkEnoughArgs(3)
+		sharep(contract, flag.Arg(1), flag.Arg(2))
 	} else if flag.Arg(0) == "test" {
 		src.ChainTestMethod(contract)
 	} else {
@@ -112,11 +121,7 @@ func main() {
 }
 
 func storekey(contract *client.Contract, username string) {
-	pubkey, err := src.ReadUserPubkey(username)
-	if err != nil {
-		panic(err)
-	}
-	err = src.ChainStoreUserPubkey(contract, username, pubkey)
+	err := src.ChainStoreLocalPubkey(contract, username)
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +129,7 @@ func storekey(contract *client.Contract, username string) {
 }
 
 func getkey(contract *client.Contract, username string) {
-	out, err := src.ChainRetrieveUserPubkey(contract, username)
+	out, err := src.ChainRetrievePubkey(contract, username)
 	if err != nil {
 		panic(err)
 	}
@@ -132,9 +137,8 @@ func getkey(contract *client.Contract, username string) {
 	fmt.Printf("\n%vKey retrieved successfully for user %v%v\n", GREEN, username, NC)
 }
 
-func createp(contract *client.Contract, args []string) {
-	prescription := src.PrescriptionFromCmdArgs(args[1], args[2], args[3], args[4], args[5], args[6], args[7])
-	err := src.ChainCreatePrescriptionSimple(contract, prescription)
+func createp(contract *client.Contract) {
+	err := src.ChainCreatePrescription(contract)
 	if err != nil {
 		panic(err)
 	} else {
@@ -142,12 +146,44 @@ func createp(contract *client.Contract, args []string) {
 	}
 }
 
-func readp(contract *client.Contract, prescriptionId string) {
-	prescription, err := src.ChainReadPrescription(contract, prescriptionId)
+func updatep(contract *client.Contract, args []string) {
+	cmdInput := src.PrescriptionFromCmdArgs(args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8])
+	err := src.ChainUpdatePrescription(contract, cmdInput)
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
+	}
+}
+
+func setfillp(contract *client.Contract, pid string, newfill string) {
+	newfillInt, err := strconv.Atoi(newfill)
+	if err != nil {
+		panic(fmt.Errorf("Failed to parse newfill into integer: %v", err))
+	}
+	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vSetfill Prescription Successful%v\n", GREEN, NC)
+	}
+
+}
+
+func readp(contract *client.Contract, pid string) {
+	prescription, err := src.ChainReadPrescription(contract, pid)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("prescription: %v\n", prescription)
+}
+
+func sharep(contract *client.Contract, pid string, username string) {
+	err := src.ChainSharePrescription(contract, pid, username)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
 }
 
 func checkEnoughArgs(expected int) {

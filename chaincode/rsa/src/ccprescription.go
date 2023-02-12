@@ -6,8 +6,8 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, tag string, pdata string) error {
-	// Add Prescription to Chain
+// TODO: Add Access Controls.
+func (s *SmartContract) SavePrescription(ctx contractapi.TransactionContextInterface, tag string, pdata string) error {
 	err := ctx.GetStub().PutPrivateData(collectionPrescription, tag, []byte(pdata))
 	if err != nil {
 		return fmt.Errorf("Failed to add prescription to private data: %v", err)
