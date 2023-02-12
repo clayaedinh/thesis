@@ -162,6 +162,67 @@ func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uin
 	return nil
 }
 
+func ChainReportGetReaders(contract *client.Contract) ([]byte, error) {
+	readers, err := contract.EvaluateTransaction("GetAllReportReaders")
+	if err != nil {
+		return nil, err
+	}
+	return readers, nil
+}
+
+// Encrypts the given prescription at the given pid for all report readers
+// Probably has to be called every time prescription is updated
+// ^ this is why role-based encryption is better
+
+func ChainReportEncrypt(contract *client.Contract, pid string) error {
+	prescription, err := ChainReadPrescription(contract, pid)
+	if err != nil {
+		return fmt.Errorf("Failed to read prescription %v : %v", pid, err)
+	}
+	readers, err := ChainReportGetReaders(contract)
+	if err != nil {
+		return err
+	}
+
+	for _, reader := range readers {
+		username := string(reader)
+		//Request pubkey from username to share to
+		otherPubkey, err := ChainRetrievePubkey(contract, username)
+		if err != nil {
+			return err
+		}
+		//Re-encrypt the prescription with the new user credentials
+		b64encrypted, err := packagePrescription(otherPubkey, prescription)
+		if err != nil {
+			return err
+		}
+		tag := genPrescriptionTag(pid, username)
+
+		//Save prescription with tag
+		_, err = contract.SubmitTransaction("SavePrescription", tag, b64encrypted)
+		if err != nil {
+			return ChaincodeParseError(err)
+		}
+	}
+	return nil
+}
+
+/*
+func ChainReportView(contract *client.Contract) error {
+	pdatas, err := contract.EvaluateTransaction("GetAllPrescriptions")
+	if err != nil {
+		return err
+	}
+
+	for _, pdata := range pdatas {
+		prescription, err := unpackagePrescription(pdata)
+		if err != nil {
+			return err
+		}
+	}
+}
+*/
+
 func ChaincodeParseError(err error) error {
 	var errorString string
 	switch err := err.(type) {

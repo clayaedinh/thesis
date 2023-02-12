@@ -12,5 +12,12 @@
     "blockToLive" : 0,
     "memberOnlyRead" : true,
     "memberOnlyWrite" : true    
+    },
+    {
+    "name": "collectionReportReaders",
+    "policy" : "OR('Org1MSP.member', 'Org2MSP.member')",
+    "blockToLive" : 0,
+    "memberOnlyRead" : true,
+    "memberOnlyWrite" : true    
     }
 ]
