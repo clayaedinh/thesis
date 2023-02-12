@@ -59,40 +59,46 @@ func keyFromChainRetrieval(arr []byte) (*rsa.PublicKey, error) {
 	return parsePubkeyBytes(encoded)
 }
 
-// From https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
+// from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
+
 func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
+	msgLen := len(msg)
 	hash := sha256.New()
-	ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, pub, msg, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error encrypting bytes : %v", err)
+	step := pub.Size() - 2*hash.Size() - 2
+	var encrypted []byte
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+
+		encryptedBlock, err := rsa.EncryptOAEP(hash, rand.Reader, pub, msg[start:finish], nil)
+		if err != nil {
+			return nil, fmt.Errorf("error encrypting bytes : %v", err)
+		}
+		encrypted = append(encrypted, encryptedBlock...)
 	}
-	return ciphertext, nil
+
+	return encrypted, nil
 }
 
-// From https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
+// from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
+
 func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
+	msgLen := len(ciphertext)
 	hash := sha256.New()
-	msg, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error decyrypting bytes : %v", err)
+	step := priv.PublicKey.Size()
+	var decrypted []byte
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+		decryptedBlock, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext[start:finish], nil)
+		if err != nil {
+			return nil, fmt.Errorf("error decyrypting bytes : %v", err)
+		}
+		decrypted = append(decrypted, decryptedBlock...)
 	}
-	return msg, nil
+	return decrypted, nil
 }
-
-/*
-func RetrieveLocalUserPubkey(username string) (*rsa.PublicKey, error) {
-	keybytes, err := readKeyfile(username)
-	if err != nil {
-		return nil, err
-	}
-	return pubkeyFromBytes(keybytes)
-}
-
-func RetrieveLocalUserPrivkey(username string) (*rsa.PrivateKey, error) {
-	keybytes, err := readKeyfile(username)
-	if err != nil {
-		return nil, err
-	}
-	return privkeyFromBytes(keybytes)
-}
-*/

@@ -52,7 +52,7 @@ func printHelp() {
 	fmt.Printf("./rsa %vgetkey%v <username>\n", CYAN, NC)
 	fmt.Println("Retrieves the RSA public key of the given username from the ledger.")
 	fmt.Println("")
-	fmt.Printf("./rsa %vcreatep%v <drug_brand> <drug_sched> <drug_price> <patient_name> <patient_address> <doctor_name> <doctor_no>\n", CYAN, NC)
+	fmt.Printf("./rsa %vcreatep%v <brand> <dosage> <patient_name> <patient_address> <doctor_name> <doctor_prc> <pieces_total>\n", CYAN, NC)
 	fmt.Println("Creates a prescription with the above arguments.")
 	fmt.Println("")
 	fmt.Printf("./rsa %vreadp%v <id>\n", CYAN, NC)

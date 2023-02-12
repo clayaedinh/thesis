@@ -5,30 +5,20 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
-	"math"
 	"math/rand"
+	"strconv"
 )
 
 type Prescription struct {
-	Id             string `json:"Id"`
-	DrugBrand      string `json:"DrugBrand"`
-	DrugDoseSched  string `json:"DrugDoseSched"`
-	DrugPrice      string `json:"DrugPrice"`
+	Id             uint64 `json:"Id"`
+	Brand          string `json:"Brand"`
+	Dosage         string `json:"Dosage"`
 	PatientName    string `json:"PatientName"`
 	PatientAddress string `json:"PatientAddress"`
 	PrescriberName string `json:"PrescriberName"`
-	PrescriberNo   string `json:"PrescriberNo"`
-	FilledAmount   string `json:"FilledAmount"`
-}
-
-type PrescriptionCmdInput struct {
-	DrugBrand      string `json:"DrugBrand"`
-	DrugDoseSched  string `json:"DrugDoseSched"`
-	DrugPrice      string `json:"DrugPrice"`
-	PatientName    string `json:"PatientName"`
-	PatientAddress string `json:"PatientAddress"`
-	PrescriberName string `json:"PrescriberName"`
-	PrescriberNo   string `json:"PrescriberNo"`
+	PrescriberNo   uint32 `json:"PrescriberNo"`
+	PiecesTotal    uint8  `json:"AmountTotal"`
+	PiecesFilled   uint8  `json:"AmountFilled"` // in terms of percentage
 }
 
 func encodePrescription(prescription *Prescription) ([]byte, error) {
@@ -51,24 +41,42 @@ func decodePrescription(encoded []byte) (*Prescription, error) {
 	return &pres, nil
 }
 
-func genPrescriptionId() string {
-	pid := fmt.Sprint(rand.Intn(math.MaxInt32))
+func genPrescriptionId() uint64 {
+	pid := rand.Uint64()
 	log.Printf("Generated prescription id: %v", pid)
 	return pid
 }
 
-func PrescriptionFromCmdArgs(drugBrand string, drugSched string, drugPrice string,
-	patientName string, patientAddress string, prescriberName string, prescriberNo string) *Prescription {
+type PrescriptionCmdInput struct {
+	DrugBrand      string `json:"DrugBrand"`
+	Dosage         string `json:"Dosage"`
+	PatientName    string `json:"PatientName"`
+	PatientAddress string `json:"PatientAddress"`
+	PrescriberName string `json:"PrescriberName"`
+	PrescriberNo   uint32 `json:"PrescriberNo"`
+	PiecesTotal    uint8  `json:"AmountTotal"`
+}
+
+func PrescriptionFromCmdArgs(brand string, dosage string, patientName string, patientAddress string,
+	prescriberName string, prescriberNo string, piecesTotal string) *Prescription {
+	prescriberNoConv, err := strconv.Atoi(prescriberNo)
+	if err != nil {
+		panic(fmt.Errorf("Failed to parse prescriber number into integer: %v", err))
+	}
+	piecesTotalConv, err := strconv.Atoi(piecesTotal)
+	if err != nil {
+		panic(fmt.Errorf("Failed to parse pieces total into integer: %v", err))
+	}
 
 	prescription := Prescription{
 		Id:             genPrescriptionId(),
-		DrugBrand:      drugBrand,
-		DrugDoseSched:  drugSched,
-		DrugPrice:      drugPrice,
+		Brand:          brand,
+		Dosage:         dosage,
 		PatientName:    patientName,
 		PatientAddress: patientAddress,
 		PrescriberName: prescriberName,
-		PrescriberNo:   prescriberNo,
+		PrescriberNo:   uint32(prescriberNoConv),
+		PiecesTotal:    uint8(piecesTotalConv),
 	}
 	return &prescription
 

@@ -32,7 +32,7 @@ func ChainCreatePrescriptionSimple(contract *client.Contract, prescription *Pres
 	fmt.Printf("prescription: %v\n", prescription)
 
 	//Get hash(prescription_id + userid_shared_to), used as key for ledger private collection
-	tag_raw := sha256.Sum256([]byte(prescription.Id + getCurrentUser()))
+	tag_raw := sha256.Sum256([]byte(fmt.Sprintf("%v", prescription.Id) + getCurrentUser()))
 	tag := string(tag_raw[:])
 
 	// Encode Prescription to Bytes
