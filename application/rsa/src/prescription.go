@@ -3,7 +3,6 @@ package src
 import (
 	"bytes"
 	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
@@ -54,17 +53,6 @@ func genPrescriptionId() uint64 {
 	pid := rand.Uint64()
 	log.Printf("Generated prescription id: %v", pid)
 	return pid
-}
-
-// ===============================================
-// Generate Prescription Tag
-// A hashed, base64 encoded value of:
-// (prescriptionId + username)
-// ===============================================
-
-func genPrescriptionTag(pid string, username string) string {
-	tag_raw := sha256.Sum256([]byte(pid + username))
-	return base64.StdEncoding.EncodeToString(tag_raw[:])
 }
 
 // ===============================================

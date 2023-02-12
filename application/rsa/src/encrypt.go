@@ -1,11 +1,13 @@
 package src
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -126,4 +128,50 @@ func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 		decrypted = append(decrypted, decryptedBlock...)
 	}
 	return decrypted, nil
+}
+
+// ===============================================
+// Hash Username
+// Hashes the username so no info is revealed
+// ===============================================
+/*
+func hashUsername(username string) string {
+	raw := sha256.Sum256([]byte(username))
+	return base64.StdEncoding.EncodeToString(raw[:])
+}
+*/
+
+// ===============================================
+// Decoders
+// For communication with the chaincode
+// ===============================================
+
+func decodePrescriptionSet(rawgob []byte) (map[string]string, error) {
+	pset := make(map[string]string)
+	enc := gob.NewDecoder(bytes.NewReader(rawgob))
+	err := enc.Decode(&pset)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding data : %v", err)
+	}
+	return pset, nil
+}
+
+func decodeStringSlice(rawgob []byte) ([]string, error) {
+	var strings []string
+	enc := gob.NewDecoder(bytes.NewReader(rawgob))
+	err := enc.Decode(&strings)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding data : %v", err)
+	}
+	return strings, nil
+}
+
+func encodePrescriptionSet(pset *map[string]string) ([]byte, error) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(pset)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to gob the prescription set: %v", err)
+	}
+	return buf.Bytes(), nil
 }
