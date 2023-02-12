@@ -113,6 +113,9 @@ func main() {
 	} else if flag.Arg(0) == "sharep" {
 		checkEnoughArgs(3)
 		sharep(contract, flag.Arg(1), flag.Arg(2))
+	} else if flag.Arg(0) == "deletep" {
+		checkEnoughArgs(2)
+		deletep(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "test" {
 		src.ChainTestMethod(contract)
 	} else {
@@ -153,6 +156,15 @@ func updatep(contract *client.Contract, args []string) {
 		panic(err)
 	} else {
 		fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
+	}
+}
+
+func deletep(contract *client.Contract, pid string) {
+	err := src.ChainDeletePrescription(contract, pid)
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vDelete Prescription Successful%v\n", GREEN, NC)
 	}
 }
 

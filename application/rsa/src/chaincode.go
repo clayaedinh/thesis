@@ -160,6 +160,14 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	return nil
 }
 
+func ChainDeletePrescription(contract *client.Contract, pid string) error {
+	_, err := contract.SubmitTransaction("DeletePrescription", pid)
+	if err != nil {
+		return ChaincodeParseError(err)
+	}
+	return nil
+}
+
 func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
 	prescription, err := ChainReadPrescription(contract, pid)
 	if err != nil {
