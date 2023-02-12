@@ -25,3 +25,11 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 	}
 	return string(pdata), nil
 }
+
+func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, pid string) error {
+	err := ctx.GetStub().DelPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return fmt.Errorf("Error in deleting prescription data: %v", err)
+	}
+	return nil
+}
