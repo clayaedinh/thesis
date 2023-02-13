@@ -26,7 +26,7 @@ func decodePrescriptionSet(rawgob []byte) (map[string]string, error) {
 	return pset, nil
 }
 
-func encodeStringSlice(strings *[]string) ([]byte, error) {
+func encodeStringSlice(strings []string) ([]byte, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(strings)

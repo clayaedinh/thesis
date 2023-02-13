@@ -1,6 +1,7 @@
 package src
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -37,7 +38,13 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	return nil
 }
 
-func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, newgob []byte) error {
+func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64gob string) error {
+	//decode
+	newgob, err := base64.StdEncoding.DecodeString(b64gob)
+	if err != nil {
+		return fmt.Errorf("Invalid Base64 encoding: %v", err)
+	}
+
 	// Get Prescription Set
 	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -128,19 +135,19 @@ func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInt
 	return nil
 }
 
-func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextInterface, pid string) ([]byte, error) {
+func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextInterface, pid string) (string, error) {
 	// Get Prescription Set
 	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read prescription: %v", err)
+		return "", fmt.Errorf("Failed to read prescription: %v", err)
 	}
 	if pgob == nil {
-		return nil, fmt.Errorf("No prescription with given pid: %v", err)
+		return "", fmt.Errorf("No prescription with given pid: %v", err)
 	}
 	// Decode gob
 	pset, err := decodePrescriptionSet(pgob)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to unpack prescription set: %v", err)
+		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
 	}
 	// Get list of keys in map
 	mapkeys := make([]string, len(pset))
@@ -150,10 +157,26 @@ func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextI
 		i++
 	}
 	// Encode this list of map keys
-	keygob, err := encodeStringSlice(&mapkeys)
+	keygob, err := encodeStringSlice(mapkeys)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return keygob, nil
+	b64gob := base64.StdEncoding.EncodeToString(keygob)
+	return b64gob, nil
 
 }
+
+/*
+func (s *SmartContract) PrescriptionAllEncryptions(ctx contractapi.TransactionContextInterface, pid string) ([]byte, error) {
+	// Get Prescription Set
+	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read prescription: %v", err)
+	}
+	if pgob == nil {
+		return nil, fmt.Errorf("No prescription with given pid: %v", err)
+	}
+	b64gob := base64.StdEncoding.EncodeToString(pgob)
+	return []byte(b64gob), nil
+}
+*/

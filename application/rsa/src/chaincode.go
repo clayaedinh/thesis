@@ -84,15 +84,17 @@ func ChainCreatePrescription(contract *client.Contract) error {
 
 func ChainSharedToList(contract *client.Contract, pid string) ([]string, error) {
 	// Get list of all users that the prescription was shared to
-	usernameGob, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
+	pgob, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
 	}
-	usernames, err := decodeStringSlice(usernameGob)
+	// base64 decode
+	decoded, err := base64.StdEncoding.DecodeString(string(pgob))
 	if err != nil {
-		return nil, fmt.Errorf("decode string slide failed: %v", err)
+		return nil, err
 	}
-	return usernames, nil
+	sharedto, err := decodeStringSlice(decoded)
+	return sharedto, nil
 }
 
 func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
@@ -121,7 +123,8 @@ func ChainUpdatePrescription(contract *client.Contract, update *Prescription) er
 		return err
 	}
 
-	_, err = contract.SubmitTransaction("UpdatePrescription", pid, string(pgob))
+	b64gob := base64.StdEncoding.EncodeToString(pgob)
+	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
