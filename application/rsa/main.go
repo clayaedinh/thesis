@@ -80,6 +80,7 @@ func main() {
 	if flag.Arg(0) == "genkey" {
 		checkEnoughArgs(2)
 		genkey(flag.Arg(1))
+		os.Exit(0)
 	}
 
 	//If application is not printing help, it will be interacting with chaincode
@@ -149,7 +150,7 @@ func getkey(contract *client.Contract, username string) {
 
 func genkey(username string) {
 	src.GenerateUserKeyFiles(username)
-	fmt.Printf("\n%vKey generated successfully for user %v%v\n", GREEN, username, NC)
+	fmt.Printf("%vKey generated successfully for user %v%v\n", GREEN, username, NC)
 }
 
 func createp(contract *client.Contract) {

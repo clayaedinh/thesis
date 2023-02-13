@@ -149,10 +149,8 @@ func savePrivKey(privkey *rsa.PrivateKey, obscureName string) {
 
 func saveLocalKey(keyPem []byte, obscureName string, filename string) {
 	os.Mkdir(keyfolder, 0777)
-	err := os.Mkdir(filepath.Join(keyfolder, obscureName), 0777)
-	if err != nil {
-		fmt.Print(err)
-	}
+	os.Mkdir(filepath.Join(keyfolder, obscureName), 0777)
+
 	file, err := os.Create(filepath.Join(keyfolder, obscureName, filename))
 	if err != nil {
 		fmt.Print(err)
