@@ -105,10 +105,10 @@ createUser () {
     createUserFabric $USER_NUM $ORG_NUM $ROLE
     cd ${APP_RSA_PATH}
     [ ! -d rsakeys ] && mkdir rsakeys
-    cd rsakeys
+    #cd rsakeys
     #oldGenKeyPair $USER_NUM
+    #cd ..
     ./rsa genkey user${USER_NUM}
-    cd ..
     storePublicKey $USER_NUM $ORG_NUM
 }
 
