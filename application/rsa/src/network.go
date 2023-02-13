@@ -160,8 +160,8 @@ func SmartContract(gw *client.Gateway) *client.Contract {
 	return network.GetContract(chaincodeName)
 }
 
-func currentUsernameHash() string {
-	return HashUsername(userId)
+func currentUserObscure() string {
+	return obscureName(userId)
 }
 
 func currentOrg() string {
