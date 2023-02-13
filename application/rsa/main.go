@@ -86,7 +86,7 @@ func main() {
 	//If application is not printing help, it will be interacting with chaincode
 	//So start connection
 	src.SetConnectionVariables(*flagOrg, *flagUser, *flagPort)
-	src.PrintConnectionVariables()
+	//src.PrintConnectionVariables()
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
 		panic(err)
@@ -121,6 +121,9 @@ func main() {
 	} else if flag.Arg(0) == "sharep" {
 		checkEnoughArgs(3)
 		sharep(contract, flag.Arg(1), flag.Arg(2))
+	} else if flag.Arg(0) == "sharedto" {
+		checkEnoughArgs(2)
+		sharedto(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "deletep" {
 		checkEnoughArgs(2)
 		deletep(contract, flag.Arg(1))
@@ -209,6 +212,14 @@ func sharep(contract *client.Contract, pid string, username string) {
 		panic(err)
 	}
 	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
+}
+
+func sharedto(contract *client.Contract, pid string) {
+	list, err := src.ChainSharedToList(contract, pid)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("list: %v\n", list)
 }
 
 func checkEnoughArgs(expected int) {

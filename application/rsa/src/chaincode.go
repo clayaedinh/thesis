@@ -74,7 +74,7 @@ func ChainCreatePrescription(contract *client.Contract) error {
 		return err
 	}
 
-	_, err = contract.SubmitTransaction("SavePrescription", fmt.Sprintf("%v", prescription.Id), obscureName, b64encrypted)
+	_, err = contract.SubmitTransaction("CreatePrescription", fmt.Sprintf("%v", prescription.Id), obscureName, b64encrypted)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
@@ -82,19 +82,25 @@ func ChainCreatePrescription(contract *client.Contract) error {
 
 }
 
-func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
-	//tag := genPrescriptionTag(fmt.Sprintf("%v", update.Id), getCurrentUser())
+func ChainSharedToList(contract *client.Contract, pid string) ([]string, error) {
 	// Get list of all users that the prescription was shared to
-	pid := fmt.Sprintf("%v", update.Id)
 	usernameGob, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
 	if err != nil {
-		return ChaincodeParseError(err)
+		return nil, ChaincodeParseError(err)
 	}
 	usernames, err := decodeStringSlice(usernameGob)
 	if err != nil {
+		return nil, fmt.Errorf("decode string slide failed: %v", err)
+	}
+	return usernames, nil
+}
+
+func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
+	pid := fmt.Sprintf("%v", update.Id)
+	usernames, err := ChainSharedToList(contract, pid)
+	if err != nil {
 		return err
 	}
-
 	pset := make(map[string]string)
 
 	//Encrypt for each username
@@ -140,7 +146,7 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 		return err
 	}
 	//Request pubkey from username to share to
-	otherPubkey, err := ChainRetrievePubkey(contract, obscureName)
+	otherPubkey, err := ChainRetrievePubkey(contract, username)
 	if err != nil {
 		return err
 	}
