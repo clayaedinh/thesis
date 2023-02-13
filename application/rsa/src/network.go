@@ -160,10 +160,10 @@ func SmartContract(gw *client.Gateway) *client.Contract {
 	return network.GetContract(chaincodeName)
 }
 
-func getCurrentUser() string {
-	return userId
+func currentUsernameHash() string {
+	return HashUsername(userId)
 }
 
-func getCurrentOrg() string {
+func currentOrg() string {
 	return orgName
 }

@@ -99,6 +99,9 @@ func main() {
 	} else if flag.Arg(0) == "getkey" {
 		checkEnoughArgs(2)
 		getkey(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "genkey" {
+		checkEnoughArgs(2)
+		genkey(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "createp" {
 		createp(contract)
 	} else if flag.Arg(0) == "updatep" {
@@ -138,6 +141,14 @@ func getkey(contract *client.Contract, username string) {
 	}
 	fmt.Print(out)
 	fmt.Printf("\n%vKey retrieved successfully for user %v%v\n", GREEN, username, NC)
+}
+
+func genkey(contract *client.Contract, username string) {
+	err := src.GenerateUserKeyFiles(username)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\n%vKey generated successfully for user %v%v\n", GREEN, username, NC)
 }
 
 func createp(contract *client.Contract) {

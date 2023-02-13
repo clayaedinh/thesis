@@ -87,7 +87,7 @@ func unpackagePrescription(pdata string) (*Prescription, error) {
 	}
 
 	// read user privkey
-	privkey, err := localPrivkey(getCurrentUser())
+	privkey, err := localPrivkey(currentUsernameHash())
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieved user private key: %v", err)
 	}

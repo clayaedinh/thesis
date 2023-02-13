@@ -72,7 +72,7 @@ createUserFabric () {
     cp ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/users/user${USER_NUM}@org${ORG_NUM}.example.com/msp/config.yaml
 }
 
-genKeyPair () {
+oldGenKeyPair () {
     USERNAME="user${1}"
     [ ! -d $USERNAME ] && mkdir $USERNAME
     cd $USERNAME
@@ -80,6 +80,8 @@ genKeyPair () {
     openssl pkey -in privkey.pem -out pubkey.pem -pubout
     cd ..
 }
+
+
 
 storePublicKey () {
     local USER_NUM=$1
@@ -104,12 +106,13 @@ createUser () {
     cd ${APP_RSA_PATH}
     [ ! -d rsakeys ] && mkdir rsakeys
     cd rsakeys
-    genKeyPair $USER_NUM
+    #oldGenKeyPair $USER_NUM
+    ./rsa genkey user${USER_NUM}
     cd ..
     storePublicKey $USER_NUM $ORG_NUM
 }
 
-createAdmin() {
+oldCreateAdmin() {
     echo "${CYAN}creating admin in org1...${NC}"
     [ ! -d rsakeys ] && mkdir rsakeys
     cd rsakeys
@@ -120,6 +123,10 @@ createAdmin() {
     openssl pkey -in privkey.pem -out pubkey.pem -pubout
     cd ../..
     ./rsa -user=Admin -org=org1 -port=localhost:7051 storekey Admin
+}
+
+createAdmin(){
+    ./rsa genkey Admin
 }
 
 createUsers () {

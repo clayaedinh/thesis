@@ -13,17 +13,15 @@ import (
 	"os"
 )
 
-func readKeyfile(filename string) ([]byte, error) {
-	rawfile, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %v : %v", filename, err)
-	}
-	block, _ := pem.Decode(rawfile)
-	if block == nil {
-		return nil, fmt.Errorf("failed to parse file %v as .pem", filename)
-	}
-	return block.Bytes, nil
-}
+const (
+	keyfolder    = "rsakeys/"
+	pubFilename  = "/pubkey.pem"
+	privFilename = "/privkey.pem"
+)
+
+// ===============================================
+// Encryption Read Parse
+// ===============================================
 
 func parsePubkeyBytes(arr []byte) (*rsa.PublicKey, error) {
 	parseOut, _ := x509.ParsePKIXPublicKey(arr)
@@ -43,13 +41,26 @@ func parsePrivkeyBytes(arr []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
-func localPubkeyBytes(username string) ([]byte, error) {
-	pathname := "rsakeys/" + username + "/pubkey.pem"
-	return readKeyfile(pathname)
+// ===============================================
+// Encryption Read (bytes)
+// ===============================================
+func readKeyfile(filename string) ([]byte, error) {
+	rawfile, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %v : %v", filename, err)
+	}
+	block, _ := pem.Decode(rawfile)
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse file %v as .pem", filename)
+	}
+	return block.Bytes, nil
 }
 
-func localPubkey(username string) (*rsa.PublicKey, error) {
-	pbytes, err := localPubkeyBytes(username)
+// ===============================================
+// Encryption Read (rsa key type)
+// ===============================================
+func localPubkey(usernameHash string) (*rsa.PublicKey, error) {
+	pbytes, err := readKeyfile(keyfolder + usernameHash + privFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +71,8 @@ func localPubkey(username string) (*rsa.PublicKey, error) {
 	return pubkey, nil
 }
 
-func localPrivkeyBytes(username string) ([]byte, error) {
-	pathname := "rsakeys/" + username + "/privkey.pem"
-	return readKeyfile(pathname)
-}
-
-func localPrivkey(username string) (*rsa.PrivateKey, error) {
-	pbytes, err := localPrivkeyBytes(username)
+func localPrivkey(usernameHash string) (*rsa.PrivateKey, error) {
+	pbytes, err := readKeyfile(keyfolder + usernameHash + privFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +83,7 @@ func localPrivkey(username string) (*rsa.PrivateKey, error) {
 	return privkey, nil
 }
 
-// Remove this if b64 is not used!!!
+/*
 func keyFromChainRetrieval(arr []byte) (*rsa.PublicKey, error) {
 	encoded, err := base64.StdEncoding.DecodeString(string(arr))
 	if err != nil {
@@ -85,9 +91,13 @@ func keyFromChainRetrieval(arr []byte) (*rsa.PublicKey, error) {
 	}
 	return parsePubkeyBytes(encoded)
 }
+*/
+
+// =====================================================
+// RSA Encryption and Decryption
+// =====================================================
 
 // from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
-
 func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 	msgLen := len(msg)
 	hash := sha256.New()
@@ -110,7 +120,6 @@ func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 }
 
 // from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
-
 func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 	msgLen := len(ciphertext)
 	hash := sha256.New()
@@ -134,12 +143,80 @@ func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 // Hash Username
 // Hashes the username so no info is revealed
 // ===============================================
-/*
-func hashUsername(username string) string {
+
+func HashUsername(username string) string {
 	raw := sha256.Sum256([]byte(username))
 	return base64.StdEncoding.EncodeToString(raw[:])
 }
-*/
+
+// ===============================================
+// Key Generation
+// Generates public & private keys
+// ===============================================
+
+// from https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
+func generateKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey) {
+	privkey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		panic(fmt.Errorf("Failed to generate key pair: %v", err))
+	}
+	return privkey, &privkey.PublicKey
+}
+
+func saveKeyToFile(keyPem, filename string) error {
+	pemBytes := []byte(keyPem)
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file %v : %v", filename, err)
+	}
+	_, err = file.Write(pemBytes)
+	if err != nil {
+		return fmt.Errorf("failed to write key to file %v : %v", filename, err)
+	}
+	file.Close()
+	return nil
+}
+
+// from https://levelup.gitconnected.com/a-guide-to-rsa-encryption-in-go-1a18d827f35d
+func exportPubKeyAsPEMStr(pubkey *rsa.PublicKey) string {
+	pubKeyPem := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PUBLIC KEY",
+			Bytes: x509.MarshalPKCS1PublicKey(pubkey),
+		},
+	))
+	return pubKeyPem
+}
+
+// from https://levelup.gitconnected.com/a-guide-to-rsa-encryption-in-go-1a18d827f35d
+func exportPrivKeyAsPEMStr(privkey *rsa.PrivateKey) string {
+	privKeyPem := string(pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privkey),
+		},
+	))
+	return privKeyPem
+}
+
+// used to generate a new pair of keys and their PEM files
+func GenerateUserKeyFiles(username string) error {
+	privkey, pubkey := generateKeyPair(2048)
+
+	pubpem := exportPubKeyAsPEMStr(pubkey)
+	privpem := exportPrivKeyAsPEMStr(privkey)
+
+	usernameHash := HashUsername(username)
+	err := saveKeyToFile(pubpem, keyfolder+usernameHash+pubFilename)
+	if err != nil {
+		return err
+	}
+	err = saveKeyToFile(privpem, keyfolder+usernameHash+privFilename)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // ===============================================
 // Decoders
