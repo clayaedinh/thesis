@@ -127,6 +127,7 @@ oldCreateAdmin() {
 
 createAdmin(){
     ./rsa genkey Admin
+    ./rsa storekey Admin
 }
 
 createUsers () {

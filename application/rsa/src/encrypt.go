@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"encoding/gob"
 	"encoding/hex"
-	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -114,8 +113,14 @@ func GenerateUserKeyFiles(username string) {
 
 	obscureName := obscureName(username)
 
-	savePubkey(pubkey, obscureName)
-	savePrivKey(privkey, obscureName)
+	err := savePubkey(pubkey, obscureName)
+	if err != nil {
+		panic(err)
+	}
+	err = savePrivKey(privkey, obscureName)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // from https://gist.github.com/miguelmota/3ea9286bd1d3c2a985b67cac4ba2130a
@@ -127,24 +132,22 @@ func generateKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey) {
 	return privkey, &privkey.PublicKey
 }
 
-func savePubkey(pubkey *rsa.PublicKey, obscureName string) {
-	pubKeyPem := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: x509.MarshalPKCS1PublicKey(pubkey),
-		},
-	)
-	saveLocalKey(pubKeyPem, obscureName, pubFilename)
+func savePubkey(pubkey *rsa.PublicKey, obscureName string) error {
+	data, err := x509.MarshalPKIXPublicKey(pubkey)
+	if err != nil {
+		return err
+	}
+	saveLocalKey(data, obscureName, pubFilename)
+	return nil
 }
 
-func savePrivKey(privkey *rsa.PrivateKey, obscureName string) {
-	privKeyPem := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(privkey),
-		},
-	)
-	saveLocalKey(privKeyPem, obscureName, privFilename)
+func savePrivKey(privkey *rsa.PrivateKey, obscureName string) error {
+	data, err := x509.MarshalPKCS8PrivateKey(privkey)
+	if err != nil {
+		return err
+	}
+	saveLocalKey(data, obscureName, privFilename)
+	return nil
 }
 
 func saveLocalKey(keyPem []byte, obscureName string, filename string) {
@@ -231,9 +234,5 @@ func readLocalKey(username, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %v : %v", filename, err)
 	}
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return nil, fmt.Errorf("failed to parse file %v as .pem", filename)
-	}
-	return block.Bytes, nil
+	return data, nil
 }
