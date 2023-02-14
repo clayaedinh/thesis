@@ -184,6 +184,15 @@ func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uin
 	return ChainUpdatePrescription(contract, prescription)
 }
 
+func ChainReportAddReader(contract *client.Contract, username string) error {
+	obscureName := obscureName(username)
+	_, err := contract.SubmitTransaction("RegisterReportReader", obscureName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func ChainReportGetReaders(contract *client.Contract) ([]byte, error) {
 	readers, err := contract.EvaluateTransaction("GetAllReportReaders")
 	if err != nil {
@@ -213,7 +222,12 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 
 // If this works I will be amazed
 func ChainReportView(contract *client.Contract) error {
-	pdatas, err := contract.EvaluateTransaction("GetAllPrescriptions")
+	b64all, err := contract.EvaluateTransaction("GetAllPrescriptions")
+	if err != nil {
+		return err
+	}
+
+	pdatas, err := base64.StdEncoding.DecodeString(string(b64all))
 	if err != nil {
 		return err
 	}
@@ -224,10 +238,6 @@ func ChainReportView(contract *client.Contract) error {
 	err = enc.Decode(&prescriptions)
 	if err != nil {
 		return err
-	}
-
-	if err != nil {
-		return fmt.Errorf("Failed to package prescriptions for transport: %v", err)
 	}
 
 	for _, pdata := range prescriptions {

@@ -127,6 +127,14 @@ func main() {
 	} else if flag.Arg(0) == "deletep" {
 		checkEnoughArgs(2)
 		deletep(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "readeradd" {
+		checkEnoughArgs(2)
+		readeradd(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "reportgen" {
+		checkEnoughArgs(2)
+		reportgen(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "reportread" {
+		reportread(contract)
 	} else if flag.Arg(0) == "test" {
 		src.ChainTestMethod(contract)
 	} else {
@@ -220,6 +228,30 @@ func sharedto(contract *client.Contract, pid string) {
 		panic(err)
 	}
 	fmt.Printf("list: %v\n", list)
+}
+
+func readeradd(contract *client.Contract, username string) {
+	err := src.ChainReportAddReader(contract, username)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%vUser %v is now a report reader%v\n", GREEN, username, NC)
+}
+
+func reportgen(contract *client.Contract, pid string) {
+	err := src.ChainReportEncrypt(contract, pid)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%vReports generated successfully%v\n", GREEN, NC)
+}
+
+func reportread(contract *client.Contract) {
+	err := src.ChainReportView(contract)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%vReports displayed successfully%v\n", GREEN, NC)
 }
 
 func checkEnoughArgs(expected int) {
