@@ -10,9 +10,26 @@ import (
 )
 
 func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextInterface, username string) error {
-	err := ctx.GetStub().PutPrivateData(collectionReportReaders, username, []byte(username))
+	//verify if real user by querying the key collection
+	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, username)
+	if err != nil {
+		return fmt.Errorf("Failed to verify whether user exists :%v", err)
+	}
+	if val == nil {
+		return fmt.Errorf("Given user does not exist.")
+	}
+
+	err = ctx.GetStub().PutPrivateData(collectionReportReaders, username, []byte(username))
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *SmartContract) RemoveReportReader(ctx contractapi.TransactionContextInterface, username string) error {
+	err := ctx.GetStub().DelPrivateData(collectionReportReaders, username)
+	if err != nil {
+		return fmt.Errorf("Error in removing report reader: %v", err)
 	}
 	return nil
 }
@@ -43,8 +60,38 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	return b64gob, nil
 }
 
+func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64gob string) error {
+	//decode
+	newgob, err := base64.StdEncoding.DecodeString(b64gob)
+	if err != nil {
+		return fmt.Errorf("Invalid Base64 encoding: %v", err)
+	}
+
+	// Get Prescription Set
+	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+	if prev == nil {
+		return fmt.Errorf("Cannot update prescription %v as it does not exist", pid)
+	}
+
+	// Decode gob to verify if it is valid daata
+	_, err = decodePrescriptionSet(newgob)
+	if err != nil {
+		return fmt.Errorf("Invalid update data: %v", err)
+	}
+
+	//Upload the update
+	err = ctx.GetStub().PutPrivateData(collectionReports, pid, newgob)
+	if err != nil {
+		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+	}
+	return nil
+}
+
 func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) (string, error) {
-	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionReportReaders, "", "")
+	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionReports, "", "")
 	if err != nil {
 		return "", err
 	}
