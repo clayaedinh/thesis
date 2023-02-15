@@ -1,17 +1,14 @@
 package src
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/gob"
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextInterface, username string) error {
+func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextInterface, obscuredName string) error {
 	//verify if real user by querying the key collection
-	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, username)
+	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, obscuredName)
 	if err != nil {
 		return fmt.Errorf("Failed to verify whether user exists :%v", err)
 	}
@@ -19,7 +16,8 @@ func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextI
 		return fmt.Errorf("Given user does not exist.")
 	}
 
-	err = ctx.GetStub().PutPrivateData(collectionReportReaders, username, []byte(username))
+	//Add the user to the report reading collection
+	err = ctx.GetStub().PutPrivateData(collectionReportReaders, obscuredName, []byte(obscuredName))
 	if err != nil {
 		return err
 	}
@@ -27,6 +25,7 @@ func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextI
 }
 
 func (s *SmartContract) RemoveReportReader(ctx contractapi.TransactionContextInterface, username string) error {
+	// remove the given report reader
 	err := ctx.GetStub().DelPrivateData(collectionReportReaders, username)
 	if err != nil {
 		return fmt.Errorf("Error in removing report reader: %v", err)
@@ -51,101 +50,113 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	}
 
 	// Encode this list of map keys
-	rgob, err := encodeStringSlice(readers)
+	b64slice, err := packageStringSlice(readers)
 	if err != nil {
 		return "", err
 	}
-	b64gob := base64.StdEncoding.EncodeToString(rgob)
 
-	return b64gob, nil
+	return b64slice, nil
 }
 
-func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64gob string) error {
-	//decode
-	newgob, err := base64.StdEncoding.DecodeString(b64gob)
-	if err != nil {
-		return fmt.Errorf("Invalid Base64 encoding: %v", err)
-	}
+/*
+Think of a decent way of doing these later on.
+also consider deletion of prescription should also remove it from reports too.
+REPORT GENERATE STEP-BY-STEP:
+Get readers
+encode prescription many times over
+unpackage pset
+add these prescriptions to the pset
+repackage pset
+send pset to chaincode for saving
 
-	// Get Prescription Set
-	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
-	if err != nil {
-		return err
-	}
-	if prev == nil {
-		return fmt.Errorf("Cannot update prescription %v as it does not exist", pid)
-	}
+MORE EFFICIENT : send only newly-encoded prescriptions. Have report generate unpack-repack to include this new generation.
+We can send them via another pset, then merge.
 
-	// Decode gob to verify if it is valid daata
-	_, err = decodePrescriptionSet(newgob)
-	if err != nil {
-		return fmt.Errorf("Invalid update data: %v", err)
-	}
+REPORT READ STEP-BY-STEP:
+iterate over all the elements.
+find only the one with the report reader's name
+and then add that encryption to a pset.
 
+send the final pset over.
+*/
+
+// REPORT READ STEP-BY-STEP:
+/*
+func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
 	//Upload the update
-	err = ctx.GetStub().PutPrivateData(collectionReports, pid, newgob)
+	err := ctx.GetStub().PutPrivateData(collectionReports, pid, []byte(b64pset))
 	if err != nil {
 		return fmt.Errorf("Failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
+*/
 
-func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) (string, error) {
-	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionReports, "", "")
+func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64reports string) error {
+	// unpack the b64 reports
+	reportset, err := unpackagePrescriptionSet(b64reports)
+	if err != nil {
+		return err
+	}
+
+	// get the current pset for the given pid
+	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+
+	// Unpackage pset
+	pset, err := unpackagePrescriptionSet(string(b64pset))
+	if err != nil {
+		return fmt.Errorf("Failed to unpack prescription set: %v", err)
+	}
+
+	// Iterate over the report set and add each prescription inside to the pset
+	for key, value := range reportset {
+		pset[key] = value
+	}
+
+	// repackage pset
+	b64psetNew, err := packagePrescriptionSet(pset)
+	if err != nil {
+		return err
+	}
+
+	// update private data
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64psetNew))
+	if err != nil {
+		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+	}
+	return nil
+
+}
+
+func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContextInterface, username string) (string, error) {
+	// Create Iterator
+	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionPrescription, "", "")
 	if err != nil {
 		return "", err
 	}
 	defer resultsIterator.Close()
 
-	var assets [][]byte
+	// Create set of reports (all prescriptions, encrypted for given user)
+	reportset := make(map[string]string)
 	for resultsIterator.HasNext() {
-		asset, err := resultsIterator.Next()
+		// get each prescription set
+		b64pset, err := resultsIterator.Next()
 		if err != nil {
 			return "", err
 		}
-		assets = append(assets, asset.Value)
-	}
-
-	//I have no idea if this will work
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(assets)
-	if err != nil {
-		return "", fmt.Errorf("Failed to package prescriptions for transport: %v", err)
-	}
-
-	//base64 it
-	b64all := base64.StdEncoding.EncodeToString(buf.Bytes())
-
-	return b64all, nil
-}
-
-/*
-func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) ([]byte, error) {
-	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionReportReaders, "", "")
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	var assets [][]byte
-	for resultsIterator.HasNext() {
-		asset, err := resultsIterator.Next()
+		// unpackage the prescription set
+		pset, err := unpackagePrescriptionSet(string(b64pset.Value))
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		assets = append(assets, asset.Value)
+		// get the prescription with the given username
+		reportset[username] = pset[username]
 	}
+	// package the reportset
+	b64reports, err := packagePrescriptionSet(reportset)
 
-	//I have no idea if this will work
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(assets)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to package prescriptions for transport: %v", err)
-	}
-
-	return buf.Bytes(), nil
+	return b64reports, nil
 }
-
-*/

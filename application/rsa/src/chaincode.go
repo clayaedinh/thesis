@@ -1,11 +1,9 @@
 package src
 
 import (
-	"bytes"
 	"context"
 	"crypto/rsa"
 	"encoding/base64"
-	"encoding/gob"
 	"errors"
 	"fmt"
 
@@ -84,16 +82,13 @@ func ChainCreatePrescription(contract *client.Contract) error {
 
 func ChainSharedToList(contract *client.Contract, pid string) ([]string, error) {
 	// Get list of all users that the prescription was shared to
-	pgob, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
+	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
 	}
 	// base64 decode
-	decoded, err := base64.StdEncoding.DecodeString(string(pgob))
-	if err != nil {
-		return nil, err
-	}
-	sharedto, err := decodeStringSlice(decoded)
+
+	sharedto, err := unpackageStringSlice(string(b64strings))
 	return sharedto, nil
 }
 
@@ -118,12 +113,10 @@ func ChainUpdatePrescription(contract *client.Contract, update *Prescription) er
 		pset[username] = b64encrypted
 	}
 
-	pgob, err := gobEncode(&pset)
+	b64gob, err := packagePrescriptionSet(pset)
 	if err != nil {
 		return err
 	}
-
-	b64gob := base64.StdEncoding.EncodeToString(pgob)
 	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
 	if err != nil {
 		return ChaincodeParseError(err)
@@ -193,12 +186,13 @@ func ChainReportAddReader(contract *client.Contract, username string) error {
 	return nil
 }
 
-func ChainReportGetReaders(contract *client.Contract) ([]byte, error) {
-	readers, err := contract.EvaluateTransaction("GetAllReportReaders")
+func ChainReportGetReaders(contract *client.Contract) ([]string, error) {
+	b64readers, err := contract.EvaluateTransaction("GetAllReportReaders")
 	if err != nil {
 		return nil, err
 	}
-	return readers, nil
+	strings, err := unpackageStringSlice(string(b64readers))
+	return strings, nil
 }
 
 // Encrypts the given prescription at the given pid for all report readers
@@ -210,43 +204,57 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 	if err != nil {
 		return err
 	}
-	for _, reader := range readers {
-		username := string(reader)
-		err = ChainSharePrescription(contract, pid, username)
+	prescription, err := ChainReadPrescription(contract, pid)
+	if err != nil {
+		return err
+	}
+	pset := make(map[string]string)
+
+	for _, username := range readers {
+		pubkey, err := readLocalPubkey(currentUserObscure())
 		if err != nil {
 			return err
 		}
+		b64encrypted, err := packagePrescription(pubkey, prescription)
+		if err != nil {
+			return err
+		}
+		pset[username] = b64encrypted
+	}
+
+	b64reports, err := packagePrescriptionSet(pset)
+	if err != nil {
+		return err
+	}
+	_, err = contract.SubmitTransaction("ReportGenerate", pid, b64reports)
+	if err != nil {
+		return ChaincodeParseError(err)
 	}
 	return nil
 }
 
 // If this works I will be amazed
 func ChainReportView(contract *client.Contract) error {
+
 	b64all, err := contract.EvaluateTransaction("GetAllPrescriptions")
 	if err != nil {
 		return err
 	}
-
-	pdatas, err := base64.StdEncoding.DecodeString(string(b64all))
-	if err != nil {
-		return err
-	}
-
 	//I have no idea if this will work
-	prescriptions := [][]byte{}
-	enc := gob.NewDecoder(bytes.NewReader(pdatas))
-	err = enc.Decode(&prescriptions)
+	prescriptions, err := unpackageStringSlice(string(b64all))
 	if err != nil {
 		return err
 	}
+	fmt.Printf("prescriptions: %v\n", prescriptions)
 
 	for _, pdata := range prescriptions {
-		prescription, err := unpackagePrescription(string(pdata))
+		prescription, err := unpackagePrescription(pdata)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("prescription: %v\n", prescription)
 	}
+
 	return nil
 }
 

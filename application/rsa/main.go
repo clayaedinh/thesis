@@ -130,6 +130,9 @@ func main() {
 	} else if flag.Arg(0) == "readeradd" {
 		checkEnoughArgs(2)
 		readeradd(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "readerall" {
+		checkEnoughArgs(1)
+		readerall(contract)
 	} else if flag.Arg(0) == "reportgen" {
 		checkEnoughArgs(2)
 		reportgen(contract, flag.Arg(1))
@@ -252,6 +255,14 @@ func reportread(contract *client.Contract) {
 		panic(err)
 	}
 	fmt.Printf("%vReports displayed successfully%v\n", GREEN, NC)
+}
+
+func readerall(contract *client.Contract) {
+	them, err := src.ChainReportGetReaders(contract)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("them: %v\n", them)
 }
 
 func checkEnoughArgs(expected int) {

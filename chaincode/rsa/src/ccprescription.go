@@ -1,7 +1,6 @@
 package src
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -9,7 +8,7 @@ import (
 
 // TODO: Add Access Controls.
 
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, usernameHash string, pdata string) error {
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string, b64prescription string) error {
 	// Get Prescription Set
 	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -21,106 +20,83 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 
 	// Make map, consisting of all different encryptions of the same prescription
 	pset := make(map[string]string)
-
 	// Insert hash of the name of creating user
-	pset[usernameHash] = pdata
+	pset[obscuredName] = b64prescription
 
-	// Encode to gob for easier transport
-	gobdata, err := encodePrescriptionSet(&pset)
+	b64pset, err := packagePrescriptionSet(pset)
 	if err != nil {
 		return err
 	}
 
-	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, gobdata)
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
 		return fmt.Errorf("Failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
 
-func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64gob string) error {
-	//decode
-	newgob, err := base64.StdEncoding.DecodeString(b64gob)
-	if err != nil {
-		return fmt.Errorf("Invalid Base64 encoding: %v", err)
-	}
-
-	// Get Prescription Set
-	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
-	if err != nil {
-		return err
-	}
-	if prev == nil {
-		return fmt.Errorf("Cannot update prescription %v as it does not exist", pid)
-	}
-
-	// Decode gob to verify if it is valid daata
-	_, err = decodePrescriptionSet(newgob)
-	if err != nil {
-		return fmt.Errorf("Invalid update data: %v", err)
-	}
-
+func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
 	//Upload the update
-	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, newgob)
+	err := ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
 		return fmt.Errorf("Failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
 
-func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, usernameHash string, pdata string) error {
+func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string, b64prescription string) error {
 	// Get Prescription Set
-	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return err
 	}
-	if pgob == nil {
+	if b64pset == nil {
 		return fmt.Errorf("Cannot create prescription %v as it does not exist", pid)
 	}
 
-	// Decode gob
-	pset, err := decodePrescriptionSet(pgob)
+	// Unpackage gob
+	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
 		return fmt.Errorf("Failed to unpack prescription set: %v", err)
 	}
 
 	// Insert hash of the name of creating user
-	pset[usernameHash] = pdata
+	pset[obscuredName] = b64prescription
 
-	// Encode to gob
-	gobdata, err := encodePrescriptionSet(&pset)
+	// Repackage
+	b64updatedpset, err := packagePrescriptionSet(pset)
 	if err != nil {
 		return err
 	}
-
-	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, gobdata)
+	// Save to Private Data
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64updatedpset))
 	if err != nil {
 		return fmt.Errorf("Failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
 
-func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string, usernameHash string) (string, error) {
+func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string) (string, error) {
 	// Get Prescription Set
-	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return "", fmt.Errorf("Failed to read prescription: %v", err)
 	}
-	if pgob == nil {
+	if b64pset == nil {
 		return "", fmt.Errorf("No prescription set to read with given pid: %v", err)
 	}
 
-	// Decode gob
-	pset, err := decodePrescriptionSet(pgob)
+	// Unpackage Prescription Set
+	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
-		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
+		return "", err
 	}
 
-	// Return pdata if it has been encrypted for the given user
-	pdata, exists := pset[usernameHash]
+	// Return b64prescription if it has been encrypted for the given user
+	b64prescription, exists := pset[obscuredName]
 
 	if exists {
-		return pdata, nil
+		return b64prescription, nil
 	}
 
 	return "", fmt.Errorf("Given user does not have permission to this prescription")
@@ -137,46 +113,30 @@ func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInt
 
 func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextInterface, pid string) (string, error) {
 	// Get Prescription Set
-	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return "", fmt.Errorf("Failed to read prescription: %v", err)
 	}
-	if pgob == nil {
+	if b64pset == nil {
 		return "", fmt.Errorf("No prescription with given pid: %v", err)
 	}
-	// Decode gob
-	pset, err := decodePrescriptionSet(pgob)
+	// Unpackage the data
+	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
 		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
 	}
 	// Get list of keys in map
-	mapkeys := make([]string, len(pset))
+	stringarr := make([]string, len(pset))
 	i := 0
 	for key := range pset {
-		mapkeys[i] = key
+		stringarr[i] = key
 		i++
 	}
 	// Encode this list of map keys
-	keygob, err := encodeStringSlice(mapkeys)
+	b64sharedto, err := packageStringSlice(stringarr)
 	if err != nil {
 		return "", err
 	}
-	b64gob := base64.StdEncoding.EncodeToString(keygob)
-	return b64gob, nil
+	return b64sharedto, nil
 
 }
-
-/*
-func (s *SmartContract) PrescriptionAllEncryptions(ctx contractapi.TransactionContextInterface, pid string) ([]byte, error) {
-	// Get Prescription Set
-	pgob, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read prescription: %v", err)
-	}
-	if pgob == nil {
-		return nil, fmt.Errorf("No prescription with given pid: %v", err)
-	}
-	b64gob := base64.StdEncoding.EncodeToString(pgob)
-	return []byte(b64gob), nil
-}
-*/

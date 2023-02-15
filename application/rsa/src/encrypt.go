@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
@@ -170,10 +171,7 @@ func saveLocalKey(keyPem []byte, obscureName string, filename string) {
 // For communication with the chaincode
 // ===============================================
 
-type gobMap interface {
-	map[string]string
-}
-
+/*
 func gobEncode(data interface{}) ([]byte, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
@@ -193,15 +191,48 @@ func decodePrescriptionSet(rawgob []byte) (map[string]string, error) {
 	}
 	return pset, nil
 }
+*/
 
-func decodeStringSlice(rawgob []byte) ([]string, error) {
+func unpackageStringSlice(b64slice string) ([]string, error) {
+	gobslice, err := base64.StdEncoding.DecodeString(b64slice)
+	if err != nil {
+		return nil, err
+	}
 	var strings []string
-	enc := gob.NewDecoder(bytes.NewReader(rawgob))
-	err := enc.Decode(&strings)
+	enc := gob.NewDecoder(bytes.NewReader(gobslice))
+	err = enc.Decode(&strings)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
 	return strings, nil
+}
+
+func packagePrescriptionSet(pset map[string]string) (string, error) {
+
+	// STEP 1: Gob-Encode
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(pset)
+	if err != nil {
+		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
+	}
+
+	// STEP 2: Base-64 it
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
+	rawgob, err := base64.StdEncoding.DecodeString(packaged)
+	if err != nil {
+		return nil, err
+	}
+	pset := make(map[string]string)
+	enc := gob.NewDecoder(bytes.NewReader(rawgob))
+	err = enc.Decode(&pset)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding data : %v", err)
+	}
+	return pset, nil
 }
 
 // ===============================================

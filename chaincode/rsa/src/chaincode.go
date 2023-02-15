@@ -6,7 +6,6 @@ const (
 	collectionPrescription  = "collectionPrescription"
 	collectionPubkeyRSA     = "collectionPubkeyRSA"
 	collectionReportReaders = "collectionReportReaders"
-	collectionReports       = "collectionReports"
 )
 
 type SmartContract struct {

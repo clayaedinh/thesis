@@ -2,36 +2,45 @@ package src
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 )
 
-func encodePrescriptionSet(pset *map[string]string) ([]byte, error) {
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(pset)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to gob the prescription set: %v", err)
-	}
-	return buf.Bytes(), nil
-}
-
-func decodePrescriptionSet(rawgob []byte) (map[string]string, error) {
-	pset := make(map[string]string)
-	enc := gob.NewDecoder(bytes.NewReader(rawgob))
-	err := enc.Decode(&pset)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding data : %v", err)
-	}
-	return pset, nil
-}
-
-func encodeStringSlice(strings []string) ([]byte, error) {
+func packageStringSlice(strings []string) (string, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(strings)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to gob the string slice: %v", err)
+		return "", fmt.Errorf("Failed to gob the string slice: %v", err)
 	}
-	return buf.Bytes(), nil
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+func packagePrescriptionSet(pset map[string]string) (string, error) {
+
+	// STEP 1: Gob-Encode
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(pset)
+	if err != nil {
+		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
+	}
+
+	// STEP 2: Base-64 it
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
+	rawgob, err := base64.StdEncoding.DecodeString(packaged)
+	if err != nil {
+		return nil, err
+	}
+	pset := make(map[string]string)
+	enc := gob.NewDecoder(bytes.NewReader(rawgob))
+	err = enc.Decode(&pset)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding data : %v", err)
+	}
+	return pset, nil
 }
