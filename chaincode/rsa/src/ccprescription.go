@@ -23,7 +23,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	// Insert hash of the name of creating user
 	pset[obscuredName] = b64prescription
 
-	b64pset, err := packagePrescriptionSet(pset)
+	b64pset, err := packagePrescriptionSet(&pset)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 	}
 
 	// Insert hash of the name of creating user
-	pset[obscuredName] = b64prescription
+	(*pset)[obscuredName] = b64prescription
 
 	// Repackage
 	b64updatedpset, err := packagePrescriptionSet(pset)
@@ -93,7 +93,7 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 	}
 
 	// Return b64prescription if it has been encrypted for the given user
-	b64prescription, exists := pset[obscuredName]
+	b64prescription, exists := (*pset)[obscuredName]
 
 	if exists {
 		return b64prescription, nil
@@ -126,14 +126,14 @@ func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextI
 		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
 	}
 	// Get list of keys in map
-	strslice := make([]string, len(pset))
+	strslice := make([]string, len(*pset))
 	i := 0
-	for key := range pset {
+	for key := range *pset {
 		strslice[i] = key
 		i++
 	}
 	// Encode this list of map keys
-	b64slice, err := packageStringSlice(strslice)
+	b64slice, err := packageStringSlice(&strslice)
 	if err != nil {
 		return "", err
 	}

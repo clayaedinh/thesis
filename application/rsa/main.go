@@ -263,7 +263,7 @@ func readerall(contract *client.Contract) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("them: %v\n", them)
+	fmt.Printf("them: %v\n", *them)
 }
 
 func checkEnoughArgs(expected int) {

@@ -171,29 +171,7 @@ func saveLocalKey(keyPem []byte, obscureName string, filename string) {
 // For communication with the chaincode
 // ===============================================
 
-/*
-func gobEncode(data interface{}) ([]byte, error) {
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(data)
-	if err != nil {
-		return nil, fmt.Errorf("GOBENCODE Failed to gob the prescription set: %v", err)
-	}
-	return buf.Bytes(), nil
-}
-
-func decodePrescriptionSet(rawgob []byte) (map[string]string, error) {
-	pset := make(map[string]string)
-	enc := gob.NewDecoder(bytes.NewReader(rawgob))
-	err := enc.Decode(&pset)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding data : %v", err)
-	}
-	return pset, nil
-}
-*/
-
-func unpackageStringSlice(b64slice string) ([]string, error) {
+func unpackageStringSlice(b64slice string) (*[]string, error) {
 	gobslice, err := base64.StdEncoding.DecodeString(b64slice)
 	if err != nil {
 		return nil, err
@@ -204,15 +182,15 @@ func unpackageStringSlice(b64slice string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding string slice : %v", err)
 	}
-	return strings, nil
+	return &strings, nil
 }
 
-func packagePrescriptionSet(pset map[string]string) (string, error) {
+func packagePrescriptionSet(pset *map[string]string) (string, error) {
 
 	// STEP 1: Gob-Encode
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(pset)
+	err := enc.Encode(*pset)
 	if err != nil {
 		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
 	}
@@ -221,7 +199,7 @@ func packagePrescriptionSet(pset map[string]string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
-func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
+func unpackagePrescriptionSet(packaged string) (*map[string]string, error) {
 	rawgob, err := base64.StdEncoding.DecodeString(packaged)
 	if err != nil {
 		return nil, err
@@ -232,7 +210,7 @@ func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
-	return pset, nil
+	return &pset, nil
 }
 
 // ===============================================

@@ -50,7 +50,7 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	}
 
 	// Encode this list of map keys
-	b64slice, err := packageStringSlice(readers)
+	b64slice, err := packageStringSlice(&readers)
 	if err != nil {
 		return "", err
 	}
@@ -112,8 +112,8 @@ func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterfa
 	}
 
 	// Iterate over the report set and add each prescription inside to the pset
-	for key, value := range reportset {
-		pset[key] = value
+	for key, value := range *reportset {
+		(*pset)[key] = value
 	}
 
 	// repackage pset
@@ -153,10 +153,10 @@ func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContext
 			return "", err
 		}
 		// get the prescription with the given username
-		reportset[string(b64pset.Key)] = pset[username]
+		reportset[string(b64pset.Key)] = (*pset)[username]
 	}
 	// package the reportset
-	b64reports, err := packagePrescriptionSet(reportset)
+	b64reports, err := packagePrescriptionSet(&reportset)
 
 	return b64reports, nil
 }

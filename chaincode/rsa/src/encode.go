@@ -7,22 +7,22 @@ import (
 	"fmt"
 )
 
-func packageStringSlice(strings []string) (string, error) {
+func packageStringSlice(strings *[]string) (string, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(strings)
+	err := enc.Encode(*strings)
 	if err != nil {
 		return "", fmt.Errorf("Failed to gob the string slice: %v", err)
 	}
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
-func packagePrescriptionSet(pset map[string]string) (string, error) {
+func packagePrescriptionSet(pset *map[string]string) (string, error) {
 
 	// STEP 1: Gob-Encode
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(pset)
+	err := enc.Encode(*pset)
 	if err != nil {
 		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
 	}
@@ -31,7 +31,7 @@ func packagePrescriptionSet(pset map[string]string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
-func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
+func unpackagePrescriptionSet(packaged string) (*map[string]string, error) {
 	rawgob, err := base64.StdEncoding.DecodeString(packaged)
 	if err != nil {
 		return nil, err
@@ -42,5 +42,5 @@ func unpackagePrescriptionSet(packaged string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
-	return pset, nil
+	return &pset, nil
 }

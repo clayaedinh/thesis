@@ -3,5 +3,6 @@ go 1.19
 use (
 	./application/rsa
 	./chaincode/basic
+	./chaincode/basicb64
 	./chaincode/rsa
 )

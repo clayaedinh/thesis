@@ -84,7 +84,7 @@ func ChainCreatePrescription(contract *client.Contract) error {
 
 }
 
-func ChainSharedToList(contract *client.Contract, pid string) ([]string, error) {
+func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
 	// Get list of all users that the prescription was shared to
 	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
 	if err != nil {
@@ -105,7 +105,7 @@ func ChainUpdatePrescription(contract *client.Contract, update *Prescription) er
 	pset := make(map[string]string)
 
 	//Encrypt for each username
-	for _, username := range usernames {
+	for _, username := range *usernames {
 		pubkey, err := readLocalPubkey(currentUserObscure())
 		if err != nil {
 			return err
@@ -117,7 +117,7 @@ func ChainUpdatePrescription(contract *client.Contract, update *Prescription) er
 		pset[username] = b64encrypted
 	}
 
-	b64gob, err := packagePrescriptionSet(pset)
+	b64gob, err := packagePrescriptionSet(&pset)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func ChainReportAddReader(contract *client.Contract, username string) error {
 	return nil
 }
 
-func ChainReportGetReaders(contract *client.Contract) ([]string, error) {
+func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 	b64readers, err := contract.EvaluateTransaction("GetAllReportReaders")
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 	}
 	pset := make(map[string]string)
 
-	for _, obscuredName := range readers {
+	for _, obscuredName := range *readers {
 		pubkey, err := chainRetrievePubkeyWObscure(contract, obscuredName)
 		if err != nil {
 			return err
@@ -226,7 +226,7 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 		pset[obscuredName] = b64encrypted
 	}
 
-	b64reports, err := packagePrescriptionSet(pset)
+	b64reports, err := packagePrescriptionSet(&pset)
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func ChainReportView(contract *client.Contract, username string) error {
 	if err != nil {
 		return err
 	}
-	for _, pdata := range prescriptions {
+	for _, pdata := range *prescriptions {
 		prescription, err := unpackagePrescription(pdata)
 		if err != nil {
 			return err
