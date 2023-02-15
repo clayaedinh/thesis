@@ -137,7 +137,8 @@ func main() {
 		checkEnoughArgs(2)
 		reportgen(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "reportread" {
-		reportread(contract)
+		checkEnoughArgs(2)
+		reportread(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "test" {
 		src.ChainTestMethod(contract)
 	} else {
@@ -249,8 +250,8 @@ func reportgen(contract *client.Contract, pid string) {
 	fmt.Printf("%vReports generated successfully%v\n", GREEN, NC)
 }
 
-func reportread(contract *client.Contract) {
-	err := src.ChainReportView(contract)
+func reportread(contract *client.Contract, username string) {
+	err := src.ChainReportView(contract, username)
 	if err != nil {
 		panic(err)
 	}

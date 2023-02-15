@@ -34,6 +34,10 @@ func ChainStoreLocalPubkey(contract *client.Contract, username string) error {
 
 func ChainRetrievePubkey(contract *client.Contract, username string) (*rsa.PublicKey, error) {
 	obscureName := obscureName(username)
+	return chainRetrievePubkeyWObscure(contract, obscureName)
+}
+
+func chainRetrievePubkeyWObscure(contract *client.Contract, obscureName string) (*rsa.PublicKey, error) {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", obscureName)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
@@ -210,8 +214,8 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 	}
 	pset := make(map[string]string)
 
-	for _, username := range readers {
-		pubkey, err := readLocalPubkey(currentUserObscure())
+	for _, obscuredName := range readers {
+		pubkey, err := chainRetrievePubkeyWObscure(contract, obscuredName)
 		if err != nil {
 			return err
 		}
@@ -219,7 +223,7 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 		if err != nil {
 			return err
 		}
-		pset[username] = b64encrypted
+		pset[obscuredName] = b64encrypted
 	}
 
 	b64reports, err := packagePrescriptionSet(pset)
@@ -234,19 +238,18 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 }
 
 // If this works I will be amazed
-func ChainReportView(contract *client.Contract) error {
+func ChainReportView(contract *client.Contract, username string) error {
 
-	b64all, err := contract.EvaluateTransaction("GetAllPrescriptions")
+	obscuredName := obscureName(username)
+
+	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport", obscuredName)
 	if err != nil {
 		return err
 	}
-	//I have no idea if this will work
-	prescriptions, err := unpackageStringSlice(string(b64all))
+	prescriptions, err := unpackagePrescriptionSet(string(b64all))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("prescriptions: %v\n", prescriptions)
-
 	for _, pdata := range prescriptions {
 		prescription, err := unpackagePrescription(pdata)
 		if err != nil {

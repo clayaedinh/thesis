@@ -202,7 +202,7 @@ func unpackageStringSlice(b64slice string) ([]string, error) {
 	enc := gob.NewDecoder(bytes.NewReader(gobslice))
 	err = enc.Decode(&strings)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding data : %v", err)
+		return nil, fmt.Errorf("error decoding string slice : %v", err)
 	}
 	return strings, nil
 }

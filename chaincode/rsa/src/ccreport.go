@@ -153,7 +153,7 @@ func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContext
 			return "", err
 		}
 		// get the prescription with the given username
-		reportset[username] = pset[username]
+		reportset[string(b64pset.Key)] = pset[username]
 	}
 	// package the reportset
 	b64reports, err := packagePrescriptionSet(reportset)

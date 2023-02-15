@@ -126,17 +126,17 @@ func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextI
 		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
 	}
 	// Get list of keys in map
-	stringarr := make([]string, len(pset))
+	strslice := make([]string, len(pset))
 	i := 0
 	for key := range pset {
-		stringarr[i] = key
+		strslice[i] = key
 		i++
 	}
 	// Encode this list of map keys
-	b64sharedto, err := packageStringSlice(stringarr)
+	b64slice, err := packageStringSlice(strslice)
 	if err != nil {
 		return "", err
 	}
-	return b64sharedto, nil
+	return b64slice, nil
 
 }
