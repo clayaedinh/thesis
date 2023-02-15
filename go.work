@@ -1,6 +1,7 @@
 go 1.19
 
 use (
+	./application/basicb64
 	./application/rsa
 	./chaincode/basic
 	./chaincode/basicb64
