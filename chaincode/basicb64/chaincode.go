@@ -23,9 +23,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -34,8 +35,8 @@ import (
 // DATA
 // ============================================================ //
 
-const prescriptionCollection = "prescriptionCollection"
-const accessListCollection = "accessListCollection"
+const collectionPrescription = "collectionPrescription"
+const collectionAccessList = "collectionAccessList"
 
 // SmartContract provides functions for managing Assets such as Prescription
 
@@ -57,8 +58,8 @@ type Prescription struct {
 }
 
 type PrescriptionAccessList struct {
-	PrescriptionId string   `json:"prescriptionId"`
-	UserIds        []string `json:"userIds"`
+	PID     uint64   `json:"prescriptionId"`
+	UserIds []string `json:"userIds"`
 }
 
 // String Constants for User Roles
@@ -77,7 +78,7 @@ func packageAccessList(access *PrescriptionAccessList) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*access)
 	if err != nil {
-		return "", fmt.Errorf("error encoding data %v: %v", access.PrescriptionId, err)
+		return "", fmt.Errorf("error encoding data %v: %v", access.PID, err)
 	}
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
@@ -96,13 +97,38 @@ func unpackageAccessList(b64access string) (*PrescriptionAccessList, error) {
 	return &access, nil
 }
 
+func packagePrescription(prescription *Prescription) (string, error) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(*prescription)
+	if err != nil {
+		return "", fmt.Errorf("error encoding data %v: %v", prescription.Id, err)
+	}
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+func unpackagePrescription(b64prescription string) (*Prescription, error) {
+	encoded, err := base64.StdEncoding.DecodeString(b64prescription)
+	if err != nil {
+		return nil, err
+	}
+	prescription := Prescription{}
+	enc := gob.NewDecoder(bytes.NewReader(encoded))
+	err = enc.Decode(&prescription)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding data : %v", err)
+	}
+	return &prescription, nil
+}
+
 // ============================================================ //
 // HELPER FUNCTIONS
 // ============================================================ //
 
-func submittingClientIdentity(ctx contractapi.TransactionContextInterface) (string, error) {
+func clientIdentity(ctx contractapi.TransactionContextInterface) (string, error) {
 	// Get Client Identity
 	b64ID, err := ctx.GetClientIdentity().GetID()
+
 	if err != nil {
 		return "", fmt.Errorf("Failed to read clientID: %v", err)
 	}
@@ -114,43 +140,50 @@ func submittingClientIdentity(ctx contractapi.TransactionContextInterface) (stri
 	return string(decodeID), nil
 }
 
+func clientIdentityB64(ctx contractapi.TransactionContextInterface) (string, error) {
+	b64ID, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		return "", fmt.Errorf("Failed to read clientID: %v", err)
+	}
+	return b64ID, nil
+}
+
 // ============================================================ //
 // CLIENT ACCESS CHECK
 // Verifies that the current client identity has access
 // ============================================================ //
-func checkClientAccess(ctx contractapi.TransactionContextInterface, prescriptionId string) error {
+func checkClientAccess(ctx contractapi.TransactionContextInterface, pid string) error {
 	// Get Access List
-	accessJSON, err := ctx.GetStub().GetPrivateData(accessListCollection, prescriptionId)
+	b64access, err := ctx.GetStub().GetPrivateData(collectionAccessList, pid)
 	if err != nil {
 		return fmt.Errorf("failed to read access list: %v", err)
 	}
-	if accessJSON == nil {
-		return fmt.Errorf("%v does not exist in collection %v", prescriptionId, accessListCollection)
+	if b64access == nil {
+		return fmt.Errorf("%v does not exist in collection %v", pid, collectionAccessList)
 	}
 
-	// Unmarshall JSON
-	var accessList *PrescriptionAccessList
-	err = json.Unmarshal(accessJSON, &accessList)
+	// Unpackage access list
+	access, err := unpackageAccessList(string(b64access))
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal access list: %v", err)
+		return err
 	}
 
 	// GET CLIENT ID
-	clientId, err := submittingClientIdentity(ctx)
+	b64clientId, err := clientIdentityB64(ctx)
 	if err != nil {
 		return fmt.Errorf("Failed to get client id: %v", err)
 	}
 
 	//CONFIRM WITH ACCESS RECORD IF USER HAS ACCESS
 	var matchingId bool = false
-	for _, element := range accessList.UserIds {
-		if element == clientId {
+	for _, element := range access.UserIds {
+		if element == b64clientId {
 			matchingId = true
 			break
 		}
 	}
 	if matchingId == false {
-		return fmt.Errorf("Permission Denied. Given User does not have access: %v", clientId)
+		return fmt.Errorf("Permission Denied. Given User does not have access.")
 	}
 	return nil
 }
@@ -159,7 +192,7 @@ func checkClientAccess(ctx contractapi.TransactionContextInterface, prescription
 // GET MY ID
 // ============================================================ //
 func (s *SmartContract) GetMyID(ctx contractapi.TransactionContextInterface) (string, error) {
-	clientId, err := submittingClientIdentity(ctx)
+	clientId, err := clientIdentityB64(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get client id: %v", err)
 	}
@@ -167,79 +200,59 @@ func (s *SmartContract) GetMyID(ctx contractapi.TransactionContextInterface) (st
 }
 
 // ============================================================ //
-// SAVE PRESCRIPTION
-// Private method
-// Used to save prescription data (newly created or update) to ledger
+// Generate Prescription Id
 // ============================================================ //
-func savePrescription(ctx contractapi.TransactionContextInterface, asset *Prescription) error {
-	// Marshall Prescription Asset
-	assetJSON, err := json.Marshal(asset)
-	if err != nil {
-		return fmt.Errorf("Failed to marshall prescription asset to JSON: %v", err)
-	}
-
-	// Add Asset to Chain
-	err = ctx.GetStub().PutPrivateData(prescriptionCollection, asset.Id, assetJSON)
-	if err != nil {
-		return fmt.Errorf("Failed to add prescription %v to private data: %v", asset.Id, err)
-	}
-
-	return nil
+func genPrescriptionId() uint64 {
+	rand.Seed(time.Now().UnixNano())
+	pid := rand.Uint64()
+	log.Printf("Generated prescription id: %v", pid)
+	return pid
 }
 
 // ============================================================ //
-// CREATE PRESCRIPTION FROM ASSET
-// Private method
-// Creates prescription with parameter as Prescription struct
+// Create Prescription
 // ============================================================ //
-func createPrescriptionFromAsset(ctx contractapi.TransactionContextInterface, prescription *Prescription) error {
-	//Save new prescription data
-	err := savePrescription(ctx, prescription)
-	if err != nil {
-		return fmt.Errorf("Error saving prescription: %v", err)
-	}
-
-	// Get Client Identity
-	clientId, err := submittingClientIdentity(ctx)
-	if err != nil {
-		return fmt.Errorf("Failed to get client identity: %v", err)
-	}
-
-	// Create Access List for Prescription
-	accessList := PrescriptionAccessList{
-		PrescriptionId: prescription.Id,
-		UserIds:        []string{clientId},
-	}
-	// Marshall Access List
-	accessJSON, err := json.Marshal(accessList)
-	if err != nil {
-		return fmt.Errorf("failed to marshal prescription access list into JSON: %v", err)
-	}
-
-	// Add Access List to Chain
-	err = ctx.GetStub().PutPrivateData(accessListCollection, prescription.Id, accessJSON)
-	if err != nil {
-		return fmt.Errorf("failed to add prescription access list %v to private data: %v", prescription.Id, err)
-	}
-
-	return nil
-}
-
-// ============================================================ //
-// CREATE PRESCRIPTION
-// May only be called by doctors
-// ============================================================ //
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface,
-	drugbrand string, drugdosesched string, drugprice float64, id string, notes string,
-	patientname string, patientaddress string, prescribername string, prescriberno string) error {
-
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {
 	// Verify if no prescription already exists with the given id
-	prescriptionJSON, err := ctx.GetStub().GetPrivateData(prescriptionCollection, id) //get the asset from chaincode state
+	existing, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid) //get the asset from chaincode state
 	if err != nil {
 		return fmt.Errorf("Failed to verify if prescription Id is already used: %v", err)
 	}
-	if prescriptionJSON != nil {
+	if existing != nil {
 		return fmt.Errorf("Prescription creation failed: ID already in use :")
+	}
+
+	// Verify if current user is a Patient
+	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
+	if err != nil {
+		return err
+	}
+
+	//Check if client has access to this prescription
+	err = checkClientAccess(ctx, pid)
+	if err != nil {
+		return fmt.Errorf("Client access check failed: %v", err)
+	}
+
+	// Add Asset to Chain
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64prescription))
+	if err != nil {
+		return fmt.Errorf("Failed to add prescription %v to private data: %v", pid, err)
+	}
+	return nil
+}
+
+// ============================================================ //
+// Update Prescription
+// ============================================================ //
+func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {
+	// Verify if a prescription already exists with the given id
+	existing, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid) //get the asset from chaincode state
+	if err != nil {
+		return fmt.Errorf("Failed to verify if prescription Id is already used: %v", err)
+	}
+	if existing == nil {
+		return fmt.Errorf("Prescription update failed: ID not in use :")
 	}
 
 	// Verify if current user is a Doctor
@@ -249,209 +262,98 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	}
 
 	//Check if client has access to this prescription
-	err = checkClientAccess(ctx, id)
+	err = checkClientAccess(ctx, pid)
 	if err != nil {
 		return fmt.Errorf("Client access check failed: %v", err)
 	}
 
-	// Create Prescription Asset
-	prescription := Prescription{
-		DrugBrand:      drugbrand,
-		DrugDoseSched:  drugdosesched,
-		DrugPrice:      drugprice,
-		Id:             id,
-		Notes:          notes,
-		PatientName:    patientname,
-		PatientAddress: patientaddress,
-		PrescriberName: prescribername,
-		PrescriberNo:   prescriberno,
-		FilledAmount:   "None",
+	// Add Asset to Chain
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64prescription))
+	if err != nil {
+		return fmt.Errorf("Failed to add prescription %v to private data: %v", pid, err)
 	}
-
-	return createPrescriptionFromAsset(ctx, &prescription)
+	return nil
 }
 
 // ============================================================ //
-// UPDATE PRESCRIPTION
-// May only be called by doctors
+// Setfill Prescription
 // ============================================================ //
-func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface,
-	drugbrand string, drugdosesched string, drugprice float64, id string, notes string,
-	patientname string, patientaddress string, prescribername string, prescriberno string) error {
-
-	// Verify if prescription with given id exists, so it can be updated
-	prescriptionJSON, err := ctx.GetStub().GetPrivateData(prescriptionCollection, id) //get the asset from chaincode state
+func (s *SmartContract) SetfillPrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {
+	// Verify if a prescription already exists with the given id
+	existing, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid) //get the asset from chaincode state
 	if err != nil {
-		return fmt.Errorf("Failed to verify if prescription with provided Id exists: %v", err)
+		return fmt.Errorf("Failed to verify if prescription Id is already used: %v", err)
 	}
-	if prescriptionJSON == nil {
-		return fmt.Errorf("Prescription update failed: no prescription exists with given Id")
-	}
-
-	// Verify if current user is a Doctor
-	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_DOCTOR)
-	if err != nil {
-		return fmt.Errorf("Current user must be doctor: %v", err)
-	}
-
-	//Check if client has access to this prescription
-	err = checkClientAccess(ctx, id)
-	if err != nil {
-		return fmt.Errorf("Client access check failed: %v", err)
-	}
-
-	//Unmarshal prescription JSON (so that FilledAmount may be obtained)
-	var old_prescription *Prescription
-	err = json.Unmarshal(prescriptionJSON, &old_prescription)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal Prescription Record JSON: %v", err)
-	}
-
-	// Create Prescription Asset
-	prescription := Prescription{
-		DrugBrand:      drugbrand,
-		DrugDoseSched:  drugdosesched,
-		DrugPrice:      drugprice,
-		Id:             id,
-		Notes:          notes,
-		PatientName:    patientname,
-		PatientAddress: patientaddress,
-		PrescriberName: prescribername,
-		PrescriberNo:   prescriberno,
-		FilledAmount:   old_prescription.FilledAmount,
-	}
-
-	return savePrescription(ctx, &prescription)
-}
-
-// ============================================================ //
-// SETFILL PRESCRIPTION
-// May only be called by pharmacists
-// ============================================================ //
-func (s *SmartContract) SetFillPrescription(ctx contractapi.TransactionContextInterface, prescriptionId string, newfill string) error {
-	// Verify if prescription with given id exists, so it can be updated
-	prescriptionJSON, err := ctx.GetStub().GetPrivateData(prescriptionCollection, prescriptionId) //get the asset from chaincode state
-	if err != nil {
-		return fmt.Errorf("Failed to verify if prescription with provided Id exists: %v", err)
-	}
-	if prescriptionJSON == nil {
-		return fmt.Errorf("Prescription setfill failed: no prescription exists with given Id")
+	if existing == nil {
+		return fmt.Errorf("Prescription update failed: ID not in use :")
 	}
 
 	// Verify if current user is a Pharmacist
 	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_PHARMACIST)
 	if err != nil {
-		return fmt.Errorf("Current user must be pharmacist: %v", err)
+		return err
 	}
 
 	//Check if client has access to this prescription
-	err = checkClientAccess(ctx, prescriptionId)
+	err = checkClientAccess(ctx, pid)
 	if err != nil {
 		return fmt.Errorf("Client access check failed: %v", err)
 	}
 
-	//Unmarshal old prescription JSON
-	var old *Prescription
-	err = json.Unmarshal(prescriptionJSON, &old)
+	// Add Asset to Chain
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64prescription))
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal Prescription Record JSON: %v", err)
+		return fmt.Errorf("Failed to add prescription %v to private data: %v", pid, err)
 	}
-
-	// Create Prescription Asset
-	prescription := Prescription{
-		DrugBrand:      old.DrugBrand,
-		DrugDoseSched:  old.DrugDoseSched,
-		DrugPrice:      old.DrugPrice,
-		Id:             old.Id,
-		Notes:          old.Notes,
-		PatientName:    old.PatientName,
-		PatientAddress: old.PatientAddress,
-		PrescriberName: old.PrescriberName,
-		PrescriberNo:   old.PrescriberNo,
-		FilledAmount:   newfill,
-	}
-
-	return savePrescription(ctx, &prescription)
+	return nil
 }
 
 // ============================================================ //
 // Delete PRESCRIPTION
 // ============================================================ //
-func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, prescriptionId string) error {
+func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, pid string) error {
 
 	//Check if client has access to this prescription
-	err := checkClientAccess(ctx, prescriptionId)
+	err := checkClientAccess(ctx, pid)
 	if err != nil {
 		return fmt.Errorf("Client access check failed: %v", err)
 	}
 
-	//delete prescription data proper
-	prescriptionJSON, err := ctx.GetStub().GetPrivateData(prescriptionCollection, prescriptionId)
-	if err != nil {
-		return fmt.Errorf("Failed to verify if prescription with provided Id exists: %v", err)
-	}
-	if prescriptionJSON == nil {
-		return fmt.Errorf("Prescription deletion failed: no prescription exists with given Id")
-	}
-	err = ctx.GetStub().DelPrivateData(prescriptionCollection, prescriptionId)
+	//Delete data propoer
+	err = ctx.GetStub().DelPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return fmt.Errorf("Error in deleting prescription data: %v", err)
 	}
 
 	//delete access lists
-	accessJSON, err := ctx.GetStub().GetPrivateData(accessListCollection, prescriptionId)
-	if err != nil {
-		return fmt.Errorf("Failed to verify if access list with provided Id exists: %v", err)
-	}
-	if accessJSON == nil {
-		return fmt.Errorf("Prescription deletion failed: no access list exists with given Id")
-	}
-	err = ctx.GetStub().DelPrivateData(accessListCollection, prescriptionId)
+	err = ctx.GetStub().DelPrivateData(collectionAccessList, pid)
 	if err != nil {
 		return fmt.Errorf("Error in deleting access list data: %v", err)
 	}
 	return nil
 }
 
-// ============================================================ //
-// READ PRESCRIPTION
-// ============================================================ //
-
-func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, prescriptionId string) (*Prescription, error) {
-
+func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string) (string, error) {
 	//Check if client has access to this prescription
-	err := checkClientAccess(ctx, prescriptionId)
+	err := checkClientAccess(ctx, pid)
 	if err != nil {
-		return nil, fmt.Errorf("Client access check failed: %v", err)
+		return "", fmt.Errorf("Client access check failed: %v", err)
 	}
-
-	//READ PRESCRIPTION AT ID
-	log.Printf("ReadAsset: collection %v, Id %v", prescriptionCollection, prescriptionId)
-	prescriptionJSON, err := ctx.GetStub().GetPrivateData(prescriptionCollection, prescriptionId) //get the asset from chaincode state
+	b64prescription, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid) //get the asset from chaincode state
 	if err != nil {
-		return nil, fmt.Errorf("failed to read prescription: %v", err)
+		return "", fmt.Errorf("failed to read prescription: %v", err)
 	}
-
-	//No Prescription found, return empty response
-	if prescriptionJSON == nil {
-		return nil, fmt.Errorf("%v does not exist in collection %v", prescriptionId, prescriptionCollection)
+	if b64prescription == nil {
+		return "", fmt.Errorf("%v does not exist in collection.", pid)
 	}
-
-	//CONVERT TO READABLE FORMAT
-	var prescription *Prescription
-	err = json.Unmarshal(prescriptionJSON, &prescription)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Prescription Record JSON: %v", err)
-	}
-
-	return prescription, nil
+	return string(b64prescription), nil
 }
 
 // ============================================================ //
 // SHARE PRESCRIPTION
 // ============================================================ //
 
-func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, prescriptionId string, newUserId string) error {
+func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, newUser string) error {
 
 	// Verify if current user is a Patient
 	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
@@ -460,38 +362,36 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 	}
 
 	//Check if client has access to this prescription
-	err = checkClientAccess(ctx, prescriptionId)
+	err = checkClientAccess(ctx, pid)
 	if err != nil {
 		return fmt.Errorf("Client access check failed: %v", err)
 	}
 
 	// Get Access List
-	accessJSON, err := ctx.GetStub().GetPrivateData(accessListCollection, prescriptionId)
+	b64access, err := ctx.GetStub().GetPrivateData(collectionAccessList, pid)
 	if err != nil {
 		return fmt.Errorf("failed to read prescription: %v", err)
 	}
-	if accessJSON == nil {
-		return fmt.Errorf("%v does not exist in collection %v", prescriptionId, accessListCollection)
+	if b64access == nil {
+		return fmt.Errorf("%v does not exist in access list.", pid)
 	}
 
-	// Unmarshall JSON
-	var accessList *PrescriptionAccessList
-	err = json.Unmarshal(accessJSON, &accessList)
+	//Unpack access list
+	access, err := unpackageAccessList(string(b64access))
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal JSON: %v", err)
+		return err
 	}
 
 	// Transfer asset in private data collection to new owner
-	accessList.UserIds = append(accessList.UserIds, newUserId)
+	access.UserIds = append(access.UserIds, newUser)
 
-	//Marshal data
-	assetJSONasBytes, err := json.Marshal(accessList)
+	//Package data
+	b64new, err := packageAccessList(access)
 	if err != nil {
-		return fmt.Errorf("failed marshalling asset %v: %v", prescriptionId, err)
+		return err
 	}
-
 	//Reinsert data
-	err = ctx.GetStub().PutPrivateData(accessListCollection, prescriptionId, assetJSONasBytes) //rewrite the asset
+	err = ctx.GetStub().PutPrivateData(collectionAccessList, pid, []byte(b64new))
 	if err != nil {
 		return err
 	}
@@ -502,7 +402,7 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 // READ ALL PRESCRIPTIONS (for testing purpose only)
 // DELETE ME when finished testing
 // ============================================================ //
-
+/*
 // GetAllAssets returns all assets found in world state
 func (s *SmartContract) GetAllPrescriptions(ctx contractapi.TransactionContextInterface) ([]*Prescription, error) {
 	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(prescriptionCollection, "", "")
@@ -601,6 +501,7 @@ func (s *SmartContract) CreateSamples(ctx contractapi.TransactionContextInterfac
 	}
 	return nil
 }
+*/
 
 func main() {
 	assetChaincode, err := contractapi.NewChaincode(&SmartContract{})
