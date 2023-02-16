@@ -44,19 +44,6 @@ type SmartContract struct {
 	contractapi.Contract
 }
 
-// Structure for Prescription Data
-type Prescription struct {
-	Id             uint64 `json:"Id"`
-	Brand          string `json:"Brand"`
-	Dosage         string `json:"Dosage"`
-	PatientName    string `json:"PatientName"`
-	PatientAddress string `json:"PatientAddress"`
-	PrescriberName string `json:"PrescriberName"`
-	PrescriberNo   uint32 `json:"PrescriberNo"`
-	PiecesTotal    uint8  `json:"AmountTotal"`
-	PiecesFilled   uint8  `json:"AmountFilled"` // in terms of percentage
-}
-
 type PrescriptionAccessList struct {
 	PID     uint64   `json:"prescriptionId"`
 	UserIds []string `json:"userIds"`
@@ -95,30 +82,6 @@ func unpackageAccessList(b64access string) (*PrescriptionAccessList, error) {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
 	return &access, nil
-}
-
-func packagePrescription(prescription *Prescription) (string, error) {
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(*prescription)
-	if err != nil {
-		return "", fmt.Errorf("error encoding data %v: %v", prescription.Id, err)
-	}
-	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
-}
-
-func unpackagePrescription(b64prescription string) (*Prescription, error) {
-	encoded, err := base64.StdEncoding.DecodeString(b64prescription)
-	if err != nil {
-		return nil, err
-	}
-	prescription := Prescription{}
-	enc := gob.NewDecoder(bytes.NewReader(encoded))
-	err = enc.Decode(&prescription)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding data : %v", err)
-	}
-	return &prescription, nil
 }
 
 // ============================================================ //
