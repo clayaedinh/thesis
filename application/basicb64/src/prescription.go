@@ -77,14 +77,17 @@ func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientNam
 	prescriberName string, prescriberNo string, piecesTotal string) *Prescription {
 
 	uintpid, err := strconv.ParseUint(pid, 10, 64)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse patient ID into integer: %v", err))
+	}
 
 	prescriberNoConv, err := strconv.Atoi(prescriberNo)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse prescriber number into integer: %v", err))
+		panic(fmt.Errorf("failed to parse prescriber number into integer: %v", err))
 	}
 	piecesTotalConv, err := strconv.Atoi(piecesTotal)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse pieces total into integer: %v", err))
+		panic(fmt.Errorf("failed to parse pieces total into integer: %v", err))
 	}
 
 	prescription := Prescription{
