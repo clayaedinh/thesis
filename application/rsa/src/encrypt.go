@@ -86,7 +86,7 @@ func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 		}
 		decryptedBlock, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext[start:finish], nil)
 		if err != nil {
-			return nil, fmt.Errorf("error decyrypting bytes : %v", err)
+			return nil, fmt.Errorf("error decrypting bytes : %v", err)
 		}
 		decrypted = append(decrypted, decryptedBlock...)
 	}
@@ -128,7 +128,7 @@ func GenerateUserKeyFiles(username string) {
 func generateKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
-		panic(fmt.Errorf("Failed to generate key pair: %v", err))
+		panic(fmt.Errorf("failed to generate key pair: %v", err))
 	}
 	return privkey, &privkey.PublicKey
 }
@@ -192,7 +192,7 @@ func packagePrescriptionSet(pset *map[string]string) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*pset)
 	if err != nil {
-		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
+		return "", fmt.Errorf("failed to gob the prescription set: %v", err)
 	}
 
 	// STEP 2: Base-64 it
@@ -220,7 +220,7 @@ func unpackagePrescriptionSet(packaged string) (*map[string]string, error) {
 func parsePubkey(arr []byte) (*rsa.PublicKey, error) {
 	parseOut, _ := x509.ParsePKIXPublicKey(arr)
 	if parseOut == nil {
-		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
+		return nil, fmt.Errorf("failed to parse bytes as x509 PKIX Public Key")
 	}
 	key := parseOut.(*rsa.PublicKey)
 	return key, nil
@@ -229,7 +229,7 @@ func parsePubkey(arr []byte) (*rsa.PublicKey, error) {
 func parsePrivkey(arr []byte) (*rsa.PrivateKey, error) {
 	parseOut, _ := x509.ParsePKCS8PrivateKey(arr)
 	if parseOut == nil {
-		return nil, fmt.Errorf("Failed to parse bytes as x509 PKIX Public Key.")
+		return nil, fmt.Errorf("failed to parse bytes as x509 PKIX Public Key")
 	}
 	key := parseOut.(*rsa.PrivateKey)
 	return key, nil

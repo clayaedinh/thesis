@@ -12,7 +12,7 @@ func packageStringSlice(strings *[]string) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*strings)
 	if err != nil {
-		return "", fmt.Errorf("Failed to gob the string slice: %v", err)
+		return "", fmt.Errorf("failed to gob the string slice: %v", err)
 	}
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
@@ -24,7 +24,7 @@ func packagePrescriptionSet(pset *map[string]string) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*pset)
 	if err != nil {
-		return "", fmt.Errorf("Failed to gob the prescription set: %v", err)
+		return "", fmt.Errorf("failed to gob the prescription set: %v", err)
 	}
 
 	// STEP 2: Base-64 it

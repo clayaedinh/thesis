@@ -163,7 +163,3 @@ func SmartContract(gw *client.Gateway) *client.Contract {
 func currentUserObscure() string {
 	return obscureName(userId)
 }
-
-func currentOrg() string {
-	return orgName
-}

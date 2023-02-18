@@ -6,9 +6,30 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-// TODO: Add Access Controls.
+/*
 
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string, b64prescription string) error {
+ACCESS CONTROLS
+
+Patient - CreatePrescription, SharePrescription, Delete Prescription
+Doctor - Update Prescription
+Pharmacist - SetFill Prescription
+All - Read Prescription
+
+*/
+
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {
+	// Get requesting user
+	currentUser, err := clientObscuredName(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Verify if current user is a Patient
+	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
+	if err != nil {
+		return err
+	}
+
 	// Get Prescription Set
 	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -21,7 +42,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	// Make map, consisting of all different encryptions of the same prescription
 	pset := make(map[string]string)
 	// Insert hash of the name of creating user
-	pset[obscuredName] = b64prescription
+	pset[currentUser] = b64prescription
 
 	b64pset, err := packagePrescriptionSet(&pset)
 	if err != nil {
@@ -36,15 +57,44 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 }
 
 func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
+
+	// Verify if current user is a Doctor
+	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_DOCTOR)
+	if err != nil {
+		return err
+	}
+
 	//Upload the update
-	err := ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
 		return fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
 
-func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string, b64prescription string) error {
+func (s *SmartContract) SetfillPrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
+
+	// Verify if current user is a Pharmacist
+	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PHARMACIST)
+	if err != nil {
+		return err
+	}
+
+	//Upload the update
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
+	if err != nil {
+		return fmt.Errorf("failed to add prescription to private data: %v", err)
+	}
+	return nil
+}
+
+func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, shareToUser string, b64prescription string) error {
+	// Verify if current user is a Patient
+	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
+	if err != nil {
+		return err
+	}
+
 	// Get Prescription Set
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -60,8 +110,19 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("failed to unpack prescription set: %v", err)
 	}
 
-	// Insert hash of the name of creating user
-	(*pset)[obscuredName] = b64prescription
+	//Verify that the current user has access to this prescription
+	currentUser, err := clientObscuredName(ctx)
+	if err != nil {
+		return err
+	}
+	_, exists := (*pset)[currentUser]
+
+	if !exists {
+		return fmt.Errorf("given user does not have access to this prescription")
+	}
+
+	// Insert hash of the name of the user shared to
+	(*pset)[shareToUser] = b64prescription
 
 	// Repackage
 	b64updatedpset, err := packagePrescriptionSet(pset)
@@ -76,7 +137,12 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 	return nil
 }
 
-func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string) (string, error) {
+func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string) (string, error) {
+	// Get requesting user
+	currentUser, err := clientObscuredName(ctx)
+	if err != nil {
+		return "", err
+	}
 	// Get Prescription Set
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -93,7 +159,7 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 	}
 
 	// Return b64prescription if it has been encrypted for the given user
-	b64prescription, exists := (*pset)[obscuredName]
+	b64prescription, exists := (*pset)[currentUser]
 
 	if exists {
 		return b64prescription, nil
@@ -104,7 +170,13 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 }
 
 func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, pid string) error {
-	err := ctx.GetStub().DelPrivateData(collectionPrescription, pid)
+
+	// Verify if current user is a Patient
+	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
+	if err != nil {
+		return err
+	}
+	err = ctx.GetStub().DelPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return fmt.Errorf("error in deleting prescription data: %v", err)
 	}

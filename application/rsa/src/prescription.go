@@ -65,12 +65,12 @@ func packagePrescription(pubkey *rsa.PublicKey, prescription *Prescription) (str
 	// Encode Prescription to Bytes
 	encoded, err := encodePrescription(prescription)
 	if err != nil {
-		return "", fmt.Errorf("Failed to encode prescription: %v", err)
+		return "", fmt.Errorf("failed to encode prescription: %v", err)
 	}
 	//Encrypt data with current user's public key
 	encrypted, err := encryptBytes(encoded, pubkey)
 	if err != nil {
-		return "", fmt.Errorf("Failed to encrypt prescription: %v", err)
+		return "", fmt.Errorf("failed to encrypt prescription: %v", err)
 	}
 	//Encode data as base64
 	return base64.StdEncoding.EncodeToString(encrypted), nil
@@ -83,25 +83,25 @@ func packagePrescription(pubkey *rsa.PublicKey, prescription *Prescription) (str
 func unpackagePrescription(pdata string) (*Prescription, error) {
 	decoded, err := base64.StdEncoding.DecodeString(pdata)
 	if err != nil {
-		return nil, fmt.Errorf("Base64 failed to decrypt prescription: %v", err)
+		return nil, fmt.Errorf("base64 failed to decrypt prescription: %v", err)
 	}
 
 	// read user privkey
 	privkey, err := readLocalPrivkey(currentUserObscure())
 	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieved user private key: %v", err)
+		return nil, fmt.Errorf("failed to retrieved user private key: %v", err)
 	}
 
 	// Decrypt data with current user's public key
 	decrypted, err := decryptBytes(decoded, privkey)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to encrypt prescription: %v", err)
+		return nil, fmt.Errorf("failed to decrypt prescription: %v", err)
 	}
 
 	// Decode Prescription to Bytes
 	prescription, err := decodePrescription(decrypted)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to decode prescription: %v", err)
+		return nil, fmt.Errorf("failed to decode prescription: %v", err)
 	}
 	return prescription, nil
 }
@@ -110,14 +110,17 @@ func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientNam
 	prescriberName string, prescriberNo string, piecesTotal string) *Prescription {
 
 	uintpid, err := strconv.ParseUint(pid, 10, 64)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse the pid into integer: %v", err))
+	}
 
 	prescriberNoConv, err := strconv.Atoi(prescriberNo)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse prescriber number into integer: %v", err))
+		panic(fmt.Errorf("failed to parse prescriber number into integer: %v", err))
 	}
 	piecesTotalConv, err := strconv.Atoi(piecesTotal)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse pieces total into integer: %v", err))
+		panic(fmt.Errorf("failed to parse pieces total into integer: %v", err))
 	}
 
 	prescription := Prescription{
