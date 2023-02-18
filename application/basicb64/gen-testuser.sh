@@ -35,7 +35,7 @@ createUserFabric () {
     export PATH=${PWD}/../bin:${PWD}:$PATH
     export FABRIC_CFG_PATH=$PWD/../config/
     export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/
-    fabric-ca-client register --caname ca-org${ORG_NUM} --id.name user${USER_NUM} --id.secret userpw${USER_NUM} --id.type client --id.attrs 'role=${ROLE}:ecert' --tls.certfiles "${PWD}/organizations/fabric-ca/org${ORG_NUM}/tls-cert.pem"
+    fabric-ca-client register --caname ca-org${ORG_NUM} --id.name user${USER_NUM} --id.secret userpw${USER_NUM} --id.type client --id.attrs "role=${ROLE}:ecert" --tls.certfiles "${PWD}/organizations/fabric-ca/org${ORG_NUM}/tls-cert.pem"
 
     if [ "$ORG_NUM" = "1" ] || [ $ORG_NUM -eq 1 ]; then
         PORT=$ORG1PORT

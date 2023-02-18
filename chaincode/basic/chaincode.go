@@ -17,7 +17,7 @@ Partly based on Hyperledger Fabric's sample chaincode.
 When more nodes are created, PLEASE update the collections_config.json in the chaincode.
 */
 
-package basic
+package main
 
 import (
 	"encoding/base64"

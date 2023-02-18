@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-gateway/pkg/client"
-	"github.com/hyperledger/fabric-protos-go/gateway"
+	"github.com/hyperledger/fabric-protos-go-apiv2/gateway"
 	"google.golang.org/grpc/status"
 )
 
@@ -68,10 +68,19 @@ func ChainUpdatePrescription(contract *client.Contract, update *Prescription) er
 func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
 	prescription, err := ChainReadPrescription(contract, pid)
 	if err != nil {
-		return fmt.Errorf("Failed to read prescription %v : %v", pid, err)
+		return fmt.Errorf("failed to read prescription %v : %v", pid, err)
 	}
 	prescription.PiecesFilled = newfill
-	return ChainUpdatePrescription(contract, prescription)
+
+	b64prescription, err := packagePrescription(prescription)
+	if err != nil {
+		return err
+	}
+	_, err = contract.SubmitTransaction("SetfillPrescription", pid, b64prescription)
+	if err != nil {
+		return ChaincodeParseError(err)
+	}
+	return nil
 }
 
 func ChainDeletePrescription(contract *client.Contract, pid string) error {
@@ -117,8 +126,4 @@ func ChaincodeParseError(err error) error {
 		}
 	}
 	return fmt.Errorf("\033[0;31m%v\033[0m", errorString)
-}
-
-func ChainTestMethod(contract *client.Contract) error {
-	return nil
 }

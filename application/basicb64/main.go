@@ -33,30 +33,31 @@ func printHelp() {
 	fmt.Printf("%vPrescription Blockchain Thesis Application, RSA version%v\n", YELLOW, NC)
 	fmt.Println("This application enables users to call chaincode remotely.")
 	fmt.Println("")
-	fmt.Printf("%vUsage%v: ./rsa %v[-options] %v<Method> %v<Method Args>\n", GREEN, NC, PURPLE, CYAN, NC)
+	fmt.Printf("%vUsage%v: ./basicb64 %v[-options] %v<Method> %v<Method Args>\n", GREEN, NC, PURPLE, CYAN, NC)
 	fmt.Println("")
 	fmt.Printf("%vAvailable Options%v:\n", GREEN, NC)
 	fmt.Println("")
-	fmt.Printf("./rsa %v-user=%vstring\n", PURPLE, NC)
+	fmt.Printf("./basicb64 %v-user=%vstring\n", PURPLE, NC)
 	fmt.Println(FLAG_H_USER)
 	fmt.Println("")
-	fmt.Printf("./rsa %v-org=%vstring\n", PURPLE, NC)
+	fmt.Printf("./basicb64 %v-org=%vstring\n", PURPLE, NC)
 	fmt.Println(FLAG_H_ORG)
 	fmt.Println("")
-	fmt.Printf("./rsa %v-port=%vlocalhost:port\n", PURPLE, NC)
+	fmt.Printf("./basicb64 %v-port=%vlocalhost:port\n", PURPLE, NC)
 	fmt.Println(FLAG_H_PORT)
 	fmt.Println("")
 	fmt.Printf("%vAvailable Methods (must be AFTER options)%v:\n", GREEN, NC)
-	fmt.Printf("./rsa %vcreatep%v\n", CYAN, NC)
-	fmt.Printf("./rsa %vsharep%v <pid> <username>\n", CYAN, NC)
-	fmt.Printf("./rsa %vreadp%v <id>\n", CYAN, NC)
-	fmt.Printf("./rsa %vupdatep%v <brand> <dosage> <patient_name> <patient_address> <doctor_name> <doctor_prc> <pieces_total>\n", CYAN, NC)
-	fmt.Printf("./rsa %vsetfillp%v <pid> <newfill>\n", CYAN, NC)
-	fmt.Printf("./rsa %vdeletep%v <pid>\n", CYAN, NC)
-	fmt.Printf("./rsa %vreportread%v <username>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vcreatep%v\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vsharep%v <pid> <username>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vreadp%v <id>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vupdatep%v <brand> <dosage> <patient_name> <patient_address> <doctor_name> <doctor_prc> <pieces_total>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vsetfillp%v <pid> <newfill>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vdeletep%v <pid>\n", CYAN, NC)
+	fmt.Printf("./basicb64 %vreportread%v <username>\n", CYAN, NC)
 	fmt.Println("")
 
 }
+
 func main() {
 	//Help Menu
 	if len(os.Args) == 1 || strings.ToLower(os.Args[1]) == "help" {
@@ -70,7 +71,6 @@ func main() {
 	flagPort := flag.String("port", "localhost:7051", FLAG_H_PORT)
 
 	flag.Parse()
-
 	//If application is not printing help, it will be interacting with chaincode
 	//So start connection
 	src.SetConnectionVariables(*flagOrg, *flagUser, *flagPort)
@@ -109,6 +109,7 @@ func main() {
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
+
 }
 
 func createp(contract *client.Contract) {
@@ -142,7 +143,7 @@ func deletep(contract *client.Contract, pid string) {
 func setfillp(contract *client.Contract, pid string, newfill string) {
 	newfillInt, err := strconv.Atoi(newfill)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse newfill into integer: %v", err))
+		panic(fmt.Errorf("failed to parse newfill into integer: %v", err))
 	}
 	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
 	if err != nil {
@@ -171,6 +172,6 @@ func sharep(contract *client.Contract, pid string, username string) {
 
 func checkEnoughArgs(expected int) {
 	if len(flag.Args()) < expected {
-		panic(fmt.Errorf("%vMethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options.\n", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
+		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
 	}
 }
