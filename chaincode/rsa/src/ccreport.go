@@ -10,10 +10,10 @@ func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextI
 	//verify if real user by querying the key collection
 	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, obscuredName)
 	if err != nil {
-		return fmt.Errorf("Failed to verify whether user exists :%v", err)
+		return fmt.Errorf("failed to verify whether user exists :%v", err)
 	}
 	if val == nil {
-		return fmt.Errorf("Given user does not exist.")
+		return fmt.Errorf("given user does not exist")
 	}
 
 	//Add the user to the report reading collection
@@ -28,7 +28,7 @@ func (s *SmartContract) RemoveReportReader(ctx contractapi.TransactionContextInt
 	// remove the given report reader
 	err := ctx.GetStub().DelPrivateData(collectionReportReaders, username)
 	if err != nil {
-		return fmt.Errorf("Error in removing report reader: %v", err)
+		return fmt.Errorf("error in removing report reader: %v", err)
 	}
 	return nil
 }
@@ -58,40 +58,6 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	return b64slice, nil
 }
 
-/*
-Think of a decent way of doing these later on.
-also consider deletion of prescription should also remove it from reports too.
-REPORT GENERATE STEP-BY-STEP:
-Get readers
-encode prescription many times over
-unpackage pset
-add these prescriptions to the pset
-repackage pset
-send pset to chaincode for saving
-
-MORE EFFICIENT : send only newly-encoded prescriptions. Have report generate unpack-repack to include this new generation.
-We can send them via another pset, then merge.
-
-REPORT READ STEP-BY-STEP:
-iterate over all the elements.
-find only the one with the report reader's name
-and then add that encryption to a pset.
-
-send the final pset over.
-*/
-
-// REPORT READ STEP-BY-STEP:
-/*
-func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
-	//Upload the update
-	err := ctx.GetStub().PutPrivateData(collectionReports, pid, []byte(b64pset))
-	if err != nil {
-		return fmt.Errorf("Failed to add prescription to private data: %v", err)
-	}
-	return nil
-}
-*/
-
 func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64reports string) error {
 	// unpack the b64 reports
 	reportset, err := unpackagePrescriptionSet(b64reports)
@@ -108,7 +74,7 @@ func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterfa
 	// Unpackage pset
 	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
-		return fmt.Errorf("Failed to unpack prescription set: %v", err)
+		return fmt.Errorf("failed to unpack prescription set: %v", err)
 	}
 
 	// Iterate over the report set and add each prescription inside to the pset
@@ -125,7 +91,7 @@ func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterfa
 	// update private data
 	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64psetNew))
 	if err != nil {
-		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+		return fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
 	return nil
 
@@ -157,6 +123,8 @@ func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContext
 	}
 	// package the reportset
 	b64reports, err := packagePrescriptionSet(&reportset)
-
+	if err != nil {
+		return "", err
+	}
 	return b64reports, nil
 }

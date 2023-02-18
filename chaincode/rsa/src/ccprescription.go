@@ -15,7 +15,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 		return err
 	}
 	if prev != nil {
-		return fmt.Errorf("Cannot create prescription %v as it already exists", pid)
+		return fmt.Errorf("cannot create prescription %v as it already exists", pid)
 	}
 
 	// Make map, consisting of all different encryptions of the same prescription
@@ -30,7 +30,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 
 	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
-		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+		return fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInt
 	//Upload the update
 	err := ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
-		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+		return fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
@@ -51,13 +51,13 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 		return err
 	}
 	if b64pset == nil {
-		return fmt.Errorf("Cannot create prescription %v as it does not exist", pid)
+		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
 	}
 
 	// Unpackage gob
 	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
-		return fmt.Errorf("Failed to unpack prescription set: %v", err)
+		return fmt.Errorf("failed to unpack prescription set: %v", err)
 	}
 
 	// Insert hash of the name of creating user
@@ -71,7 +71,7 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 	// Save to Private Data
 	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64updatedpset))
 	if err != nil {
-		return fmt.Errorf("Failed to add prescription to private data: %v", err)
+		return fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
 	return nil
 }
@@ -80,10 +80,10 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 	// Get Prescription Set
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read prescription: %v", err)
+		return "", fmt.Errorf("failed to read prescription: %v", err)
 	}
 	if b64pset == nil {
-		return "", fmt.Errorf("No prescription set to read with given pid: %v", err)
+		return "", fmt.Errorf("no prescription set to read with given pid: %v", err)
 	}
 
 	// Unpackage Prescription Set
@@ -99,14 +99,14 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 		return b64prescription, nil
 	}
 
-	return "", fmt.Errorf("Given user does not have permission to this prescription")
+	return "", fmt.Errorf("given user does not have permission to this prescription")
 
 }
 
 func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, pid string) error {
 	err := ctx.GetStub().DelPrivateData(collectionPrescription, pid)
 	if err != nil {
-		return fmt.Errorf("Error in deleting prescription data: %v", err)
+		return fmt.Errorf("error in deleting prescription data: %v", err)
 	}
 	return nil
 }
@@ -115,15 +115,15 @@ func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextI
 	// Get Prescription Set
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read prescription: %v", err)
+		return "", fmt.Errorf("failed to read prescription: %v", err)
 	}
 	if b64pset == nil {
-		return "", fmt.Errorf("No prescription with given pid: %v", err)
+		return "", fmt.Errorf("no prescription with given pid: %v", err)
 	}
 	// Unpackage the data
 	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
-		return "", fmt.Errorf("Failed to unpack prescription set: %v", err)
+		return "", fmt.Errorf("failed to unpack prescription set: %v", err)
 	}
 	// Get list of keys in map
 	strslice := make([]string, len(*pset))
