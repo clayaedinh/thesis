@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"regexp"
+	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -51,4 +53,10 @@ func clientObscuredName(ctx contractapi.TransactionContextInterface) (string, er
 
 	username := cnregex.FindStringSubmatch(string(identity))[1]
 	return obscureName(username), nil
+}
+
+func genPrescriptionId() string {
+	rand.Seed(time.Now().UnixNano())
+	pid := rand.Uint64()
+	return fmt.Sprintf("%v", pid)
 }

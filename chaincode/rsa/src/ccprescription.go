@@ -15,26 +15,29 @@ Pharmacist - SetFill Prescription
 All - Read Prescription
 */
 
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, b64prescription string) (string, error) {
+	// Generate PID
+	pid := genPrescriptionId()
+
 	// Get requesting user
 	currentUser, err := clientObscuredName(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Verify if current user is a Patient
 	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Get Prescription Set
 	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if prev != nil {
-		return fmt.Errorf("cannot create prescription %v as it already exists", pid)
+		return "", fmt.Errorf("cannot create prescription %v as it already exists", pid)
 	}
 
 	// Make map, consisting of all different encryptions of the same prescription
@@ -44,14 +47,14 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 
 	b64pset, err := packagePrescriptionSet(&pset)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
-		return fmt.Errorf("failed to add prescription to private data: %v", err)
+		return "", fmt.Errorf("failed to add prescription to private data: %v", err)
 	}
-	return nil
+	return pid, nil
 }
 
 func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {

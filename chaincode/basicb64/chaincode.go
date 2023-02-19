@@ -76,7 +76,6 @@ type Prescription struct {
 func genPrescriptionId() string {
 	rand.Seed(time.Now().UnixNano())
 	pid := rand.Uint64()
-	//log.Printf("Generated prescription id: %v", pid)
 	return fmt.Sprintf("%v", pid)
 }
 

@@ -57,30 +57,26 @@ func chainRetrievePubkeyWObscure(contract *client.Contract, obscureName string) 
 // Creates a completely BLANK prescription
 // =============================================
 
-func ChainCreatePrescription(contract *client.Contract) error {
+func ChainCreatePrescription(contract *client.Contract) (string, error) {
 	// Create a new, blank prescription
 	var prescription Prescription
 
-	// Assign an id to the prescription
-	prescription.Id = genPrescriptionId()
-
-	obscureName := currentUserObscure()
 	// Get current user pubkey
-	pubkey, err := readLocalPubkey(obscureName)
+	pubkey, err := readLocalPubkey(currentUserObscure())
 	if err != nil {
-		return err
+		return "", err
 	}
-	// package the prescription
+	// package the blank prescription
 	b64encrypted, err := packagePrescription(pubkey, &prescription)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = contract.SubmitTransaction("CreatePrescription", fmt.Sprintf("%v", prescription.Id), b64encrypted)
+	pid, err := contract.SubmitTransaction("CreatePrescription", b64encrypted)
 	if err != nil {
-		return ChaincodeParseError(err)
+		return "", ChaincodeParseError(err)
 	}
-	return nil
+	return string(pid), nil
 
 }
 
@@ -98,8 +94,8 @@ func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error)
 	return sharedto, nil
 }
 
-func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
-	pid := fmt.Sprintf("%v", update.Id)
+func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
+
 	usernames, err := ChainSharedToList(contract, pid)
 	if err != nil {
 		return err

@@ -6,14 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"log"
-	"math/rand"
 	"strconv"
-	"time"
 )
 
 type Prescription struct {
-	Id             uint64 `json:"Id"`
 	Brand          string `json:"Brand"`
 	Dosage         string `json:"Dosage"`
 	PatientName    string `json:"PatientName"`
@@ -29,7 +25,7 @@ func encodePrescription(prescription *Prescription) ([]byte, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*prescription)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding data %v: %v", prescription.Id, err)
+		return nil, fmt.Errorf("error encoding data: %v", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -42,17 +38,6 @@ func decodePrescription(encoded []byte) (*Prescription, error) {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
 	return &pres, nil
-}
-
-// ===============================================
-// Generate Prescription Id
-// a random uint64 used as an id
-// ===============================================
-func genPrescriptionId() uint64 {
-	rand.Seed(time.Now().UnixNano())
-	pid := rand.Uint64()
-	log.Printf("Generated prescription id: %v", pid)
-	return pid
 }
 
 // ===============================================
@@ -106,13 +91,8 @@ func unpackagePrescription(pdata string) (*Prescription, error) {
 	return prescription, nil
 }
 
-func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientName string, patientAddress string,
+func PrescriptionFromCmdArgs(brand string, dosage string, patientName string, patientAddress string,
 	prescriberName string, prescriberNo string, piecesTotal string) *Prescription {
-
-	uintpid, err := strconv.ParseUint(pid, 10, 64)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse the pid into integer: %v", err))
-	}
 
 	prescriberNoConv, err := strconv.Atoi(prescriberNo)
 	if err != nil {
@@ -124,7 +104,6 @@ func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientNam
 	}
 
 	prescription := Prescription{
-		Id:             uintpid,
 		Brand:          brand,
 		Dosage:         dosage,
 		PatientName:    patientName,
