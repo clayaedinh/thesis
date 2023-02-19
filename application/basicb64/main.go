@@ -64,17 +64,15 @@ func main() {
 		printHelp()
 		os.Exit(0)
 	}
-
 	//Flags
 	flagOrg := flag.String("org", "org1", FLAG_H_ORG)
 	flagUser := flag.String("user", "Admin", FLAG_H_USER)
 	flagPort := flag.String("port", "localhost:7051", FLAG_H_PORT)
-
 	flag.Parse()
+
 	//If application is not printing help, it will be interacting with chaincode
-	//So start connection
+	//Connect to chaincode:
 	src.SetConnectionVariables(*flagOrg, *flagUser, *flagPort)
-	//src.PrintConnectionVariables()
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
 		panic(err)
@@ -109,7 +107,6 @@ func main() {
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
-
 }
 
 func createp(contract *client.Contract) {
@@ -159,7 +156,7 @@ func readp(contract *client.Contract, pid string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("prescription: %v\n", prescription)
+	fmt.Printf("Prescription: %v\n", prescription)
 }
 
 func sharep(contract *client.Contract, pid string, username string) {

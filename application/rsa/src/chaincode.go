@@ -91,7 +91,6 @@ func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error)
 		return nil, ChaincodeParseError(err)
 	}
 	// base64 decode
-
 	sharedto, err := unpackageStringSlice(string(b64strings))
 	if err != nil {
 		return nil, err
@@ -331,8 +330,4 @@ func ChaincodeParseError(err error) error {
 		}
 	}
 	return fmt.Errorf("\033[0;31m%v\033[0m", errorString)
-}
-
-func ChainTestMethod(contract *client.Contract) error {
-	return nil
 }

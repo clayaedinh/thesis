@@ -7,14 +7,12 @@ import (
 )
 
 /*
-
 ACCESS CONTROLS
 
 Patient - CreatePrescription, SharePrescription, Delete Prescription
 Doctor - Update Prescription
 Pharmacist - SetFill Prescription
 All - Read Prescription
-
 */
 
 func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64prescription string) error {

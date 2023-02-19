@@ -140,8 +140,6 @@ func main() {
 	} else if flag.Arg(0) == "reportread" {
 		checkEnoughArgs(2)
 		reportread(contract, flag.Arg(1))
-	} else if flag.Arg(0) == "test" {
-		src.ChainTestMethod(contract)
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -200,7 +198,7 @@ func deletep(contract *client.Contract, pid string) {
 func setfillp(contract *client.Contract, pid string, newfill string) {
 	newfillInt, err := strconv.Atoi(newfill)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse newfill into integer: %v", err))
+		panic(fmt.Errorf("failed to parse newfill into integer: %v", err))
 	}
 	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
 	if err != nil {
@@ -216,7 +214,7 @@ func readp(contract *client.Contract, pid string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("prescription: %v\n", prescription)
+	fmt.Printf("Prescription: %v\n", prescription)
 }
 
 func sharep(contract *client.Contract, pid string, username string) {
@@ -269,6 +267,6 @@ func readerall(contract *client.Contract) {
 
 func checkEnoughArgs(expected int) {
 	if len(flag.Args()) < expected {
-		panic(fmt.Errorf("%vMethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options.\n", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
+		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
 	}
 }

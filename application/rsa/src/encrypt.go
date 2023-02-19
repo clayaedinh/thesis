@@ -186,7 +186,6 @@ func unpackageStringSlice(b64slice string) (*[]string, error) {
 }
 
 func packagePrescriptionSet(pset *map[string]string) (string, error) {
-
 	// STEP 1: Gob-Encode
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)

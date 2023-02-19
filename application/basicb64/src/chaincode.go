@@ -11,25 +11,22 @@ import (
 )
 
 func ChainCreatePrescription(contract *client.Contract) error {
-	// Create a new, blank prescription
+	// Create a new, blank prescription with random ID
 	var prescription Prescription
-
-	// Assign an id to the prescription
 	prescription.Id = genPrescriptionId()
-
-	obscureName := currentUserObscure()
-
-	// package the prescription
 	b64prescription, err := packagePrescription(&prescription)
 	if err != nil {
 		return err
 	}
+	// Get current user name
+	obscureName := currentUserObscure()
+
+	// Invoke Chaincode
 	_, err = contract.SubmitTransaction("CreatePrescription", fmt.Sprintf("%v", prescription.Id), obscureName, b64prescription)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
 	return nil
-
 }
 
 func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
@@ -91,6 +88,7 @@ func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	return nil
 }
 
+// From Fabric Samples: Basic Asset Transfer (Gateway), Golang
 func ChaincodeParseError(err error) error {
 	var errorString string
 	switch err := err.(type) {
@@ -110,8 +108,6 @@ func ChaincodeParseError(err error) error {
 		panic(fmt.Errorf("unexpected error type %T: %w", err, err))
 	}
 
-	// Any error that originates from a peer or orderer node external to the gateway will have its details
-	// embedded within the gRPC status error. The following code shows how to extract that.
 	statusErr := status.Convert(err)
 
 	details := statusErr.Details()

@@ -48,23 +48,6 @@ func SetConnectionVariables(newOrg string, newUserId string, peerPort string) {
 	channelName = "mychannel"
 }
 
-func PrintConnectionVariables() {
-	fmt.Println("==========================")
-	fmt.Printf("orgName: %v\n", orgName)
-	fmt.Printf("userId: %v\n", userId)
-	fmt.Printf("mspId: %v\n", mspId)
-	fmt.Printf("orgUrl: %v\n", orgUrl)
-	fmt.Printf("userUrl: %v\n", userUrl)
-	fmt.Printf("cryptoPath: %v\n", cryptoPath)
-	fmt.Printf("certPath: %v\n", certPath)
-	fmt.Printf("keyPath: %v\n", keyPath)
-	fmt.Printf("tlsCertPath: %v\n", tlsCertPath)
-	fmt.Printf("peerEndpoint: %v\n", peerEndpoint)
-	fmt.Printf("gatewayPeer: %v\n", gatewayPeer)
-	fmt.Printf("channelName: %v\n", channelName)
-	fmt.Println("==========================")
-}
-
 // newGrpcConnection creates a gRPC connection to the Gateway server.
 func NewGrpcConnection() (*grpc.ClientConn, error) {
 	certificate, err := loadCertificate(tlsCertPath)

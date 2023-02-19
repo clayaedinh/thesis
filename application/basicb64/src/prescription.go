@@ -26,7 +26,7 @@ type Prescription struct {
 	PrescriberName string `json:"PrescriberName"`
 	PrescriberNo   uint32 `json:"PrescriberNo"`
 	PiecesTotal    uint8  `json:"AmountTotal"`
-	PiecesFilled   uint8  `json:"AmountFilled"` // in terms of percentage
+	PiecesFilled   uint8  `json:"AmountFilled"`
 }
 
 func genPrescriptionId() uint64 {
@@ -50,7 +50,7 @@ func packagePrescription(prescription *Prescription) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*prescription)
 	if err != nil {
-		return "", fmt.Errorf("error encoding data %v: %v", prescription.Id, err)
+		return "", fmt.Errorf("error encoding prescription data %v: %v", prescription.Id, err)
 	}
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
