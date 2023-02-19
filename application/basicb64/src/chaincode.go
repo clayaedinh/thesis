@@ -10,23 +10,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func ChainCreatePrescription(contract *client.Contract) error {
-	// Create a new, blank prescription with random ID
-	var prescription Prescription
-	prescription.Id = genPrescriptionId()
-	b64prescription, err := packagePrescription(&prescription)
-	if err != nil {
-		return err
-	}
-	// Get current user name
-	obscureName := currentUserObscure()
-
+func ChainCreatePrescription(contract *client.Contract) (string, error) {
 	// Invoke Chaincode
-	_, err = contract.SubmitTransaction("CreatePrescription", fmt.Sprintf("%v", prescription.Id), obscureName, b64prescription)
+	pid, err := contract.SubmitTransaction("CreatePrescription")
 	if err != nil {
-		return ChaincodeParseError(err)
+		return "", ChaincodeParseError(err)
 	}
-	return nil
+	return string(pid), nil
 }
 
 func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
@@ -50,12 +40,12 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	return nil
 }
 
-func ChainUpdatePrescription(contract *client.Contract, update *Prescription) error {
+func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
 	b64prescription, err := packagePrescription(update)
 	if err != nil {
 		return err
 	}
-	_, err = contract.SubmitTransaction("UpdatePrescription", fmt.Sprintf("%v", update.Id), b64prescription)
+	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64prescription)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}

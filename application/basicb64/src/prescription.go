@@ -7,10 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"math/rand"
 	"strconv"
-	"time"
 )
 
 // ============================================================ //
@@ -18,7 +15,6 @@ import (
 // ============================================================ //
 
 type Prescription struct {
-	Id             uint64 `json:"Id"`
 	Brand          string `json:"Brand"`
 	Dosage         string `json:"Dosage"`
 	PatientName    string `json:"PatientName"`
@@ -27,13 +23,6 @@ type Prescription struct {
 	PrescriberNo   uint32 `json:"PrescriberNo"`
 	PiecesTotal    uint8  `json:"AmountTotal"`
 	PiecesFilled   uint8  `json:"AmountFilled"`
-}
-
-func genPrescriptionId() uint64 {
-	rand.Seed(time.Now().UnixNano())
-	pid := rand.Uint64()
-	log.Printf("Generated prescription id: %v", pid)
-	return pid
 }
 
 // ============================================================ //
@@ -50,7 +39,7 @@ func packagePrescription(prescription *Prescription) (string, error) {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(*prescription)
 	if err != nil {
-		return "", fmt.Errorf("error encoding prescription data %v: %v", prescription.Id, err)
+		return "", fmt.Errorf("error encoding prescription data: %v", err)
 	}
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
@@ -73,13 +62,8 @@ func unpackagePrescription(b64prescription string) (*Prescription, error) {
 // Prescription from Command Arguments
 // ============================================================ //
 
-func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientName string, patientAddress string,
+func PrescriptionFromCmdArgs(brand string, dosage string, patientName string, patientAddress string,
 	prescriberName string, prescriberNo string, piecesTotal string) *Prescription {
-
-	uintpid, err := strconv.ParseUint(pid, 10, 64)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse patient ID into integer: %v", err))
-	}
 
 	prescriberNoConv, err := strconv.Atoi(prescriberNo)
 	if err != nil {
@@ -91,7 +75,6 @@ func PrescriptionFromCmdArgs(pid string, brand string, dosage string, patientNam
 	}
 
 	prescription := Prescription{
-		Id:             uintpid,
 		Brand:          brand,
 		Dosage:         dosage,
 		PatientName:    patientName,

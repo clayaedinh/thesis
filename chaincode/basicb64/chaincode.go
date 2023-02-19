@@ -27,7 +27,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/rand"
 	"regexp"
+	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -57,7 +59,40 @@ const (
 )
 
 // ============================================================ //
-// ENCODING
+// PRESCRIPTIONS
+// ============================================================ //
+
+type Prescription struct {
+	Brand          string `json:"Brand"`
+	Dosage         string `json:"Dosage"`
+	PatientName    string `json:"PatientName"`
+	PatientAddress string `json:"PatientAddress"`
+	PrescriberName string `json:"PrescriberName"`
+	PrescriberNo   uint32 `json:"PrescriberNo"`
+	PiecesTotal    uint8  `json:"AmountTotal"`
+	PiecesFilled   uint8  `json:"AmountFilled"`
+}
+
+func genPrescriptionId() string {
+	rand.Seed(time.Now().UnixNano())
+	pid := rand.Uint64()
+	//log.Printf("Generated prescription id: %v", pid)
+	return fmt.Sprintf("%v", pid)
+}
+
+func createPackagedPrescription() (string, error) {
+	var prescription Prescription
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(prescription)
+	if err != nil {
+		return "", fmt.Errorf("error encoding prescription data: %v", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+// ============================================================ //
+// ACCESS LIST
 // ============================================================ //
 
 func packageAccessList(access *PrescriptionAccessList) (string, error) {
@@ -82,6 +117,14 @@ func unpackageAccessList(b64access string) (*PrescriptionAccessList, error) {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
 	return &access, nil
+}
+
+func createPackagedAccessList(obscuredName string) (string, error) {
+	// Create Access List for Prescription
+	accessList := PrescriptionAccessList{
+		UserIds: []string{obscuredName},
+	}
+	return packageAccessList(&accessList)
 }
 
 // ============================================================ //
@@ -120,14 +163,6 @@ func clientObscuredName(ctx contractapi.TransactionContextInterface) (string, er
 
 	username := cnregex.FindStringSubmatch(identity)[1]
 	return obscureName(username), nil
-}
-
-func createPackagedAccessList(obscuredName string) (string, error) {
-	// Create Access List for Prescription
-	accessList := PrescriptionAccessList{
-		UserIds: []string{obscuredName},
-	}
-	return packageAccessList(&accessList)
 }
 
 // ============================================================ //
@@ -184,40 +219,56 @@ func (s *SmartContract) GetMyID(ctx contractapi.TransactionContextInterface) (st
 // ============================================================ //
 // Create Prescription
 // ============================================================ //
-func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, pid string, obscuredName string, b64prescription string) error {
+func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface) (string, error) {
+
+	//Generate new prescription id
+	pid := genPrescriptionId()
+
 	// Verify if no prescription already exists with the given id
 	existing, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid) //get the asset from chaincode state
 	if err != nil {
-		return fmt.Errorf("failed to verify if prescription Id is already used: %v", err)
+		return "", fmt.Errorf("failed to verify if prescription Id is already used: %v", err)
 	}
 	if existing != nil {
-		return fmt.Errorf("prescription creation failed: ID already in use :%v", pid)
+		return "", fmt.Errorf("prescription creation failed: ID already in use :%v", pid)
 	}
 
 	// Verify if current user is a Patient
 	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// Add Asset to Chain
-	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64prescription))
+	//Generate new prescription
+	b64prescription, err := createPackagedPrescription()
 	if err != nil {
-		return fmt.Errorf("failed to add prescription %v to private data: %v", pid, err)
+		return "", fmt.Errorf("failed to generate new prescription: %v", err)
+	}
+	// get current client's obscured name
+	clientName, err := clientObscuredName(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve client name: %v", err)
 	}
 
 	// Create access list
-	b64access, err := createPackagedAccessList(obscuredName)
+	b64access, err := createPackagedAccessList(clientName)
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	// Add to the prescription collection
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64prescription))
+	if err != nil {
+		return "", fmt.Errorf("failed to add prescription %v to private data: %v", pid, err)
+	}
+
 	//Add the user to the access list
 	err = ctx.GetStub().PutPrivateData(collectionAccessList, pid, []byte(b64access))
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return pid, nil
 }
 
 // ============================================================ //
