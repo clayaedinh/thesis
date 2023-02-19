@@ -34,6 +34,11 @@ func obscureName(username string) string {
 	return hex.EncodeToString(raw[:])
 }
 
+func ObscureName(username string) string {
+	raw := sha256.Sum256([]byte(username))
+	return hex.EncodeToString(raw[:])
+}
+
 func packagePrescription(prescription *Prescription) (string, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)

@@ -1,3 +1,4 @@
+# DO NOT USE THIS 
 sh gen-testuser.sh user "0000" 1 "PATIENT"
 sh gen-testuser.sh user "0001" 1 "PATIENT"
 sh gen-testuser.sh user "0002" 1 "PATIENT"
