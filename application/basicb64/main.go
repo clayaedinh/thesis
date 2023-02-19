@@ -172,3 +172,26 @@ func checkEnoughArgs(expected int) {
 		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
 	}
 }
+
+/*
+	generates 10 random of the following:
+
+- pid
+- blank prescription with pid
+- update prescription
+
+also generates:
+- obscured users (user0001 to user0003)
+*/
+/*
+func inputgen() {
+	fmt.Printf("%v Prescription Ids %v\n", YELLOW, NC)
+	var pids [10]uint64
+	for i := 0; i < 10; i++ {
+		pids[i] = src.GenPrescriptionId()
+		fmt.Printf("pids[i]: %v\n", pids[i])
+	}
+	fmt.Printf("%v Blank Prescriptions %v\n", YELLOW, NC)
+
+}
+*/
