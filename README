@@ -8,6 +8,9 @@ Thesis: Blockchain Prescription
 2) Run "./install-fabric.sh binary docker" to install the binaries and docker images. DO NOT install fabric-samples.
 
 === HOW TO INSTALL - HYPERLEDGER CALIPER ===
+
+*** Caliper tests DO NOT WORK yet, as of February 19, 2023
+
 1) Install latest versions of nodejs and npm
 
 2) Run these commands inside caliper-workspace folder:
