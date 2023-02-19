@@ -2,20 +2,21 @@ Sean Chan, Aedin Clay, Lance Tan
 Thesis: Blockchain Prescription
 
 
-=== HOW TO INSTALL ===
+=== HOW TO INSTALL - CHAINCODE/APPLICATION ===
 
 1) Install the latest versions of golang and docker desktop.
 2) Run "./install-fabric.sh binary docker" to install the binaries and docker images. DO NOT install fabric-samples.
 
+=== HOW TO INSTALL - HYPERLEDGER CALIPER ===
+1) Install latest versions of nodejs and npm
+
+2) Run these commands inside caliper-workspace folder:
+npm install --only=prod @hyperledger/caliper-cli
+npx caliper bind --caliper-bind-sut fabric:2.4
+
 === HOW TO RUN ===
 
-Useful scripts are found in test-network/thesis_scripts.
-
-1) Start network: 
-network-up.sh
-
-2) Stop network: 
-network-down.sh
+Some useful scripts are found in test-network/thesis_scripts.
 
 === GENERATING USERS ===
 Ideally, users should be made using an SDK app that does the following steps:
@@ -29,3 +30,5 @@ Ideally, users should be made using an SDK app that does the following steps:
 However, implementing that is currently beyond me. Instead, the gen-testuser.sh script fakes  
 this process on the local machine by using cd to switch back and forth between directories. There
 is currently no mechanism to properly create users on a deployed version of this system.
+
+Use gen-testuser.sh!

@@ -1,0 +1,40 @@
+name: Caliper Benchmarks
+version: "2.0.0"
+
+caliper:
+  blockchain: fabric
+
+channels:
+  - channelName: mychannel
+    contracts:
+    - id: basicb64
+    - id: rsa
+
+organizations:
+  - mspid: Org1MSP
+    identities:
+      certificates:
+      - name: 'user0001'
+        clientPrivateKey:
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0001@org1.example.com/msp/keystore/priv_sk'
+        clientSignedCert:
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0001@org1.example.com/msp/signcerts/user0001@org1.example.com-cert.pem'
+      - name: 'user0002'
+        clientPrivateKey:
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0002@org1.example.com/msp/keystore/priv_sk'
+        clientSignedCert:
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0002@org1.example.com/msp/signcerts/user0002@org1.example.com-cert.pem'
+    connectionProfile:
+      path: '../test-network/organizations/peerOrganizations/org1.example.com/connection-org1.yaml'
+      discover: true
+  - mspid: Org2MSP
+    identities:
+      certificates:
+      - name: 'user0003'
+        clientPrivateKey:
+          path: '../test-network/organizations/peerOrganizations/org2.example.com/users/user0003@org2.example.com/msp/keystore/priv_sk'
+        clientSignedCert:
+          path: '../test-network/organizations/peerOrganizations/org2.example.com/users/user0003@org2.example.com/msp/signcerts/user0003@org2.example.com-cert.pem'
+    connectionProfile:
+      path: '../test-network/organizations/peerOrganizations/org2.example.com/connection-org2.yaml'
+      discover: true
