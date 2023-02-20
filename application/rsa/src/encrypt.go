@@ -20,6 +20,8 @@ const (
 	privFilename = "privkey.pem"
 )
 
+const RSA_BYTES int = 4096
+
 // ===============================================
 // Encryption Read (rsa key type)
 // ===============================================
@@ -110,7 +112,7 @@ func obscureName(username string) string {
 
 // used to generate a new pair of keys and their PEM files
 func GenerateUserKeyFiles(username string) {
-	privkey, pubkey := generateKeyPair(2048)
+	privkey, pubkey := generateKeyPair(RSA_BYTES)
 
 	obscureName := obscureName(username)
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clayaedinh/thesis/application/basicb64/src"
+	"github.com/clayaedinh/thesis/application/rsa/src"
 )
 
 /*
