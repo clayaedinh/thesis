@@ -190,3 +190,22 @@ func BenchmarkDelete(b *testing.B) {
 		src.ChainDeletePrescription(contract, pids[i])
 	}
 }
+
+func BenchmarkReportRead(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	for i := 0; i < b.N; i++ {
+		src.ChainReportView(contract)
+	}
+}

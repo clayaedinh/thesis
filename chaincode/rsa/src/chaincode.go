@@ -23,6 +23,7 @@ const (
 	USER_DOCTOR     = "DOCTOR"
 	USER_PATIENT    = "PATIENT"
 	USER_PHARMACIST = "PHARMA"
+	USER_READER     = "READER"
 )
 
 type SmartContract struct {
@@ -32,6 +33,28 @@ type SmartContract struct {
 func obscureName(username string) string {
 	raw := sha256.Sum256([]byte(username))
 	return hex.EncodeToString(raw[:])
+}
+
+// Verify if the given prescription set has a prescription encrypted with the current client
+func verifyClientAccess(ctx contractapi.TransactionContextInterface, b64pset string) error {
+
+	//get current user
+	currentUser, err := clientObscuredName(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Unpackage Prescription Set
+	pset, err := unpackagePrescriptionSet(string(b64pset))
+	if err != nil {
+		return err
+	}
+
+	_, exists := (*pset)[currentUser]
+	if !exists {
+		return fmt.Errorf("client does not have access to the given prescription set")
+	}
+	return nil
 }
 
 func clientObscuredName(ctx contractapi.TransactionContextInterface) (string, error) {

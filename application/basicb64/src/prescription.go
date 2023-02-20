@@ -34,11 +34,6 @@ func obscureName(username string) string {
 	return hex.EncodeToString(raw[:])
 }
 
-func ObscureName(username string) string {
-	raw := sha256.Sum256([]byte(username))
-	return hex.EncodeToString(raw[:])
-}
-
 func packagePrescription(prescription *Prescription) (string, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
@@ -61,6 +56,20 @@ func unpackagePrescription(b64prescription string) (*Prescription, error) {
 		return nil, fmt.Errorf("error decoding data : %v", err)
 	}
 	return &prescription, nil
+}
+
+func unpackageStringSlice(b64slice string) (*[]string, error) {
+	gobslice, err := base64.StdEncoding.DecodeString(b64slice)
+	if err != nil {
+		return nil, err
+	}
+	var strings []string
+	enc := gob.NewDecoder(bytes.NewReader(gobslice))
+	err = enc.Decode(&strings)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding string slice : %v", err)
+	}
+	return &strings, nil
 }
 
 // ============================================================ //

@@ -6,14 +6,24 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextInterface, obscuredName string) error {
-	//verify if real user by querying the key collection
+func (s *SmartContract) RegisterMeAsReportReader(ctx contractapi.TransactionContextInterface) error {
+	obscuredName, err := clientObscuredName(ctx)
+	if err != nil {
+		return err
+	}
+	// Verify if current user is a Report Reader role
+	err = ctx.GetClientIdentity().AssertAttributeValue("role", USER_READER)
+	if err != nil {
+		return err
+	}
+
+	//verify if user has public key information
 	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, obscuredName)
 	if err != nil {
-		return fmt.Errorf("failed to verify whether user exists :%v", err)
+		return fmt.Errorf("failed to verify if user has RSA public key information :%v", err)
 	}
 	if val == nil {
-		return fmt.Errorf("given user does not exist")
+		return fmt.Errorf("given user does not have RSA public key information")
 	}
 
 	//Add the user to the report reading collection
@@ -24,9 +34,14 @@ func (s *SmartContract) RegisterReportReader(ctx contractapi.TransactionContextI
 	return nil
 }
 
-func (s *SmartContract) RemoveReportReader(ctx contractapi.TransactionContextInterface, username string) error {
+func (s *SmartContract) UnregisterMeAsReportReader(ctx contractapi.TransactionContextInterface) error {
+	obscuredName, err := clientObscuredName(ctx)
+	if err != nil {
+		return err
+	}
+
 	// remove the given report reader
-	err := ctx.GetStub().DelPrivateData(collectionReportReaders, username)
+	err = ctx.GetStub().DelPrivateData(collectionReportReaders, obscuredName)
 	if err != nil {
 		return fmt.Errorf("error in removing report reader: %v", err)
 	}
@@ -58,7 +73,8 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 	return b64slice, nil
 }
 
-func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterface, pid string, b64reports string) error {
+func (s *SmartContract) UpdateReport(ctx contractapi.TransactionContextInterface, pid string, b64reports string) error {
+
 	// unpack the b64 reports
 	reportset, err := unpackagePrescriptionSet(b64reports)
 	if err != nil {
@@ -67,6 +83,12 @@ func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterfa
 
 	// get the current pset for the given pid
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+
+	// Confirm that user has access to this prescription in particular
+	err = verifyClientAccess(ctx, string(b64pset))
 	if err != nil {
 		return err
 	}
@@ -97,7 +119,22 @@ func (s *SmartContract) ReportGenerate(ctx contractapi.TransactionContextInterfa
 
 }
 
-func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContextInterface, username string) (string, error) {
+func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContextInterface) (string, error) {
+	// Get current user
+	currentUser, err := clientObscuredName(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if current user is in report readers
+	exists, err := ctx.GetStub().GetPrivateData(collectionReportReaders, currentUser)
+	if err != nil {
+		return "", err
+	}
+	if exists == nil {
+		return "", fmt.Errorf("given user is not a report reader")
+	}
+
 	// Create Iterator
 	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionPrescription, "", "")
 	if err != nil {
@@ -119,7 +156,7 @@ func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContext
 			return "", err
 		}
 		// get the prescription with the given username
-		reportset[string(b64pset.Key)] = (*pset)[username]
+		reportset[string(b64pset.Key)] = (*pset)[currentUser]
 	}
 	// package the reportset
 	b64reports, err := packagePrescriptionSet(&reportset)

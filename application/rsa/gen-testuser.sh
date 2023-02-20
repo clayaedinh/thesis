@@ -72,17 +72,6 @@ createUserFabric () {
     cp ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/users/user${USER_NUM}@org${ORG_NUM}.example.com/msp/config.yaml
 }
 
-oldGenKeyPair () {
-    USERNAME="user${1}"
-    [ ! -d $USERNAME ] && mkdir $USERNAME
-    cd $USERNAME
-    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:2048
-    openssl pkey -in privkey.pem -out pubkey.pem -pubout
-    cd ..
-}
-
-
-
 storePublicKey () {
     local USER_NUM=$1
     local ORG_NUM=$2
@@ -105,24 +94,8 @@ createUser () {
     createUserFabric $USER_NUM $ORG_NUM $ROLE
     cd ${APP_RSA_PATH}
     [ ! -d rsakeys ] && mkdir rsakeys
-    #cd rsakeys
-    #oldGenKeyPair $USER_NUM
-    #cd ..
     ./rsa genkey user${USER_NUM}
     storePublicKey $USER_NUM $ORG_NUM
-}
-
-oldCreateAdmin() {
-    echo "${CYAN}creating admin in org1...${NC}"
-    [ ! -d rsakeys ] && mkdir rsakeys
-    cd rsakeys
-    USERNAME="Admin"
-    [ ! -d $USERNAME ] && mkdir $USERNAME
-    cd $USERNAME
-    openssl genpkey -out privkey.pem -quiet -algorithm rsa -pkeyopt rsa_keygen_bits:2048
-    openssl pkey -in privkey.pem -out pubkey.pem -pubout
-    cd ../..
-    ./rsa -user=Admin -org=org1 -port=localhost:7051 storekey Admin
 }
 
 createAdmin(){
@@ -134,6 +107,7 @@ createUsers () {
     createUser "0001" 1 "DOCTOR"
     createUser "0002" 1 "PATIENT"
     createUser "0003" 2 "PHARMA"  
+    createUser "0004" 1 "READER"
 }
 
 deleteKeys () {

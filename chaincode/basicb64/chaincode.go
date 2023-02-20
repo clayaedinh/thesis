@@ -56,6 +56,7 @@ const (
 	USER_DOCTOR     = "DOCTOR"
 	USER_PATIENT    = "PATIENT"
 	USER_PHARMACIST = "PHARMA"
+	USER_READER     = "READER"
 )
 
 // ============================================================ //
@@ -124,6 +125,16 @@ func createPackagedAccessList(obscuredName string) (string, error) {
 		UserIds: []string{obscuredName},
 	}
 	return packageAccessList(&accessList)
+}
+
+func packageStringSlice(strings *[]string) (string, error) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(*strings)
+	if err != nil {
+		return "", fmt.Errorf("failed to gob the string slice: %v", err)
+	}
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
 // ============================================================ //
@@ -202,17 +213,6 @@ func checkClientAccess(ctx contractapi.TransactionContextInterface, pid string) 
 		return fmt.Errorf("permission denied. given user does not have access")
 	}
 	return nil
-}
-
-// ============================================================ //
-// GET MY ID
-// ============================================================ //
-func (s *SmartContract) GetMyID(ctx contractapi.TransactionContextInterface) (string, error) {
-	clientId, err := submittingClientIdentity(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get client id: %v", err)
-	}
-	return clientId, nil
 }
 
 // ============================================================ //
@@ -424,6 +424,44 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 		return err
 	}
 	return nil
+}
+
+// ============================================================ //
+// REPORT READING
+// ============================================================ //
+
+func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContextInterface) (string, error) {
+	// Verify if current user is a Reader
+	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_READER)
+	if err != nil {
+		return "", err
+	}
+
+	// Create Iterator
+	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collectionPrescription, "", "")
+	if err != nil {
+		return "", err
+	}
+	defer resultsIterator.Close()
+
+	// Create set of reports (all prescriptions, encrypted for given user)
+	var reportSet []string
+	for resultsIterator.HasNext() {
+		// get each prescription
+		entry, err := resultsIterator.Next()
+		if err != nil {
+			return "", err
+		}
+		// get the prescription with the given username
+		reportSet = append(reportSet, string(entry.Value))
+	}
+	// package the reportset
+	b64reports, err := packageStringSlice(&reportSet)
+	if err != nil {
+		return "", err
+	}
+	return b64reports, nil
+
 }
 
 func main() {

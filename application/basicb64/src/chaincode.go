@@ -78,6 +78,18 @@ func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	return nil
 }
 
+func ChainReportView(contract *client.Contract) (*[]string, error) {
+	b64report, err := contract.SubmitTransaction("GetPrescriptionReport")
+	if err != nil {
+		return nil, ChaincodeParseError(err)
+	}
+	report, err := unpackageStringSlice(string(b64report))
+	if err != nil {
+		return nil, err
+	}
+	return report, nil
+}
+
 // From Fabric Samples: Basic Asset Transfer (Gateway), Golang
 func ChaincodeParseError(err error) error {
 	var errorString string

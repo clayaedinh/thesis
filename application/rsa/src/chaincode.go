@@ -208,11 +208,10 @@ func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uin
 	return nil
 }
 
-func ChainReportAddReader(contract *client.Contract, username string) error {
-	obscureName := obscureName(username)
-	_, err := contract.SubmitTransaction("RegisterReportReader", obscureName)
+func ChainReportAddReader(contract *client.Contract) error {
+	_, err := contract.SubmitTransaction("RegisterMeAsReportReader")
 	if err != nil {
-		return err
+		return ChaincodeParseError(err)
 	}
 	return nil
 }
@@ -233,7 +232,7 @@ func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 // Probably has to be called every time prescription is updated
 // ^ this is why role-based encryption is better
 
-func ChainReportEncrypt(contract *client.Contract, pid string) error {
+func ChainReportUpdate(contract *client.Contract, pid string) error {
 	readers, err := ChainReportGetReaders(contract)
 	if err != nil {
 		return err
@@ -260,7 +259,7 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 	if err != nil {
 		return err
 	}
-	_, err = contract.SubmitTransaction("ReportGenerate", pid, b64reports)
+	_, err = contract.SubmitTransaction("UpdateReport", pid, b64reports)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
@@ -268,27 +267,26 @@ func ChainReportEncrypt(contract *client.Contract, pid string) error {
 }
 
 // If this works I will be amazed
-func ChainReportView(contract *client.Contract, username string) error {
+func ChainReportView(contract *client.Contract) (string, error) {
 
-	obscuredName := obscureName(username)
-
-	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport", obscuredName)
+	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport")
 	if err != nil {
-		return err
+		return "", err
 	}
 	prescriptions, err := unpackagePrescriptionSet(string(b64all))
 	if err != nil {
-		return err
+		return "", err
 	}
+	var output string
 	for _, pdata := range *prescriptions {
 		prescription, err := unpackagePrescription(pdata)
 		if err != nil {
-			return err
+			return "", err
 		}
-		fmt.Printf("prescription: %v\n", prescription)
+		output += fmt.Sprintf("prescription: %v\n", prescription)
 	}
 
-	return nil
+	return output, nil
 }
 
 func ChaincodeParseError(err error) error {

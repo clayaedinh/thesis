@@ -104,6 +104,8 @@ func main() {
 	} else if flag.Arg(0) == "deletep" {
 		checkEnoughArgs(2)
 		deletep(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "reportread" {
+		reportread(contract)
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -116,39 +118,6 @@ func createp(contract *client.Contract) {
 	} else {
 		fmt.Printf("%vCreate Prescription Successful. PID: %v.%v\n", GREEN, pid, NC)
 	}
-}
-
-func updatep(contract *client.Contract, args []string) {
-	cmdInput := src.PrescriptionFromCmdArgs(args[2], args[3], args[4], args[5], args[6], args[7], args[8])
-	err := src.ChainUpdatePrescription(contract, args[1], cmdInput)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
-	}
-}
-
-func deletep(contract *client.Contract, pid string) {
-	err := src.ChainDeletePrescription(contract, pid)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vDelete Prescription Successful%v\n", GREEN, NC)
-	}
-}
-
-func setfillp(contract *client.Contract, pid string, newfill string) {
-	newfillInt, err := strconv.Atoi(newfill)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse newfill into integer: %v", err))
-	}
-	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vSetfill Prescription Successful%v\n", GREEN, NC)
-	}
-
 }
 
 func readp(contract *client.Contract, pid string) {
@@ -167,6 +136,48 @@ func sharep(contract *client.Contract, pid string, username string) {
 	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
 }
 
+func updatep(contract *client.Contract, args []string) {
+	cmdInput := src.PrescriptionFromCmdArgs(args[2], args[3], args[4], args[5], args[6], args[7], args[8])
+	err := src.ChainUpdatePrescription(contract, args[1], cmdInput)
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
+	}
+}
+
+func setfillp(contract *client.Contract, pid string, newfill string) {
+	newfillInt, err := strconv.Atoi(newfill)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse newfill into integer: %v", err))
+	}
+	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vSetfill Prescription Successful%v\n", GREEN, NC)
+	}
+
+}
+
+func deletep(contract *client.Contract, pid string) {
+	err := src.ChainDeletePrescription(contract, pid)
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("%vDelete Prescription Successful%v\n", GREEN, NC)
+	}
+}
+
+func reportread(contract *client.Contract) {
+	reports, err := src.ChainReportView(contract)
+	if err != nil {
+		panic(err)
+	}
+	for _, x := range *reports {
+		fmt.Printf("x: %v\n", x)
+	}
+}
 func checkEnoughArgs(expected int) {
 	if len(flag.Args()) < expected {
 		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))

@@ -129,8 +129,7 @@ func main() {
 		checkEnoughArgs(2)
 		deletep(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "readeradd" {
-		checkEnoughArgs(2)
-		readeradd(contract, flag.Arg(1))
+		readeradd(contract)
 	} else if flag.Arg(0) == "readerall" {
 		checkEnoughArgs(1)
 		readerall(contract)
@@ -138,8 +137,7 @@ func main() {
 		checkEnoughArgs(2)
 		reportgen(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "reportread" {
-		checkEnoughArgs(2)
-		reportread(contract, flag.Arg(1))
+		reportread(contract)
 	} else if flag.Arg(0) == "test01" {
 		test01()
 	} else {
@@ -174,8 +172,32 @@ func createp(contract *client.Contract) {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Printf("%vCreate Prescription Successful. PID: %v. %v\n", GREEN, pid, NC)
+		fmt.Printf("%vCreate Prescription Successful. PID: %v%v\n", GREEN, pid, NC)
 	}
+}
+
+func readp(contract *client.Contract, pid string) {
+	prescription, err := src.ChainReadPrescription(contract, pid)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Prescription: %v\n", prescription)
+}
+
+func sharep(contract *client.Contract, pid string, username string) {
+	err := src.ChainSharePrescription(contract, pid, username)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
+}
+
+func sharedto(contract *client.Contract, pid string) {
+	list, err := src.ChainSharedToList(contract, pid)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("list: %v\n", list)
 }
 
 func updatep(contract *client.Contract, args []string) {
@@ -211,51 +233,28 @@ func setfillp(contract *client.Contract, pid string, newfill string) {
 
 }
 
-func readp(contract *client.Contract, pid string) {
-	prescription, err := src.ChainReadPrescription(contract, pid)
+func readeradd(contract *client.Contract) {
+	err := src.ChainReportAddReader(contract)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Prescription: %v\n", prescription)
-}
-
-func sharep(contract *client.Contract, pid string, username string) {
-	err := src.ChainSharePrescription(contract, pid, username)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
-}
-
-func sharedto(contract *client.Contract, pid string) {
-	list, err := src.ChainSharedToList(contract, pid)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("list: %v\n", list)
-}
-
-func readeradd(contract *client.Contract, username string) {
-	err := src.ChainReportAddReader(contract, username)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%vUser %v is now a report reader%v\n", GREEN, username, NC)
+	fmt.Printf("%vUser is now a report reader%v\n", GREEN, NC)
 }
 
 func reportgen(contract *client.Contract, pid string) {
-	err := src.ChainReportEncrypt(contract, pid)
+	err := src.ChainReportUpdate(contract, pid)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%vReports generated successfully%v\n", GREEN, NC)
 }
 
-func reportread(contract *client.Contract, username string) {
-	err := src.ChainReportView(contract, username)
+func reportread(contract *client.Contract) {
+	output, err := src.ChainReportView(contract)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("%v", output)
 	fmt.Printf("%vReports displayed successfully%v\n", GREEN, NC)
 }
 

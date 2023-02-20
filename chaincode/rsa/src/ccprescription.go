@@ -65,6 +65,21 @@ func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInt
 		return err
 	}
 
+	// Get Old Prescription Set
+	oldpset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+	if oldpset == nil {
+		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
+	}
+
+	// Confirm that user has access to this prescription in particular
+	err = verifyClientAccess(ctx, string(oldpset))
+	if err != nil {
+		return err
+	}
+
 	//Upload the update
 	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
 	if err != nil {
@@ -77,6 +92,21 @@ func (s *SmartContract) SetfillPrescription(ctx contractapi.TransactionContextIn
 
 	// Verify if current user is a Pharmacist
 	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PHARMACIST)
+	if err != nil {
+		return err
+	}
+
+	// Get Old Prescription Set
+	oldpset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+	if oldpset == nil {
+		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
+	}
+
+	// Confirm that user has access to this prescription in particular
+	err = verifyClientAccess(ctx, string(oldpset))
 	if err != nil {
 		return err
 	}
@@ -105,21 +135,16 @@ func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
 	}
 
-	// Unpackage gob
+	// Unpackage prescription set
 	pset, err := unpackagePrescriptionSet(string(b64pset))
 	if err != nil {
 		return fmt.Errorf("failed to unpack prescription set: %v", err)
 	}
 
-	//Verify that the current user has access to this prescription
-	currentUser, err := clientObscuredName(ctx)
+	// Confirm that user has access to this prescription in particular
+	err = verifyClientAccess(ctx, string(b64pset))
 	if err != nil {
 		return err
-	}
-	_, exists := (*pset)[currentUser]
-
-	if !exists {
-		return fmt.Errorf("given user does not have access to this prescription")
 	}
 
 	// Insert hash of the name of the user shared to
@@ -166,7 +191,7 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 		return b64prescription, nil
 	}
 
-	return "", fmt.Errorf("given user does not have permission to this prescription")
+	return "", fmt.Errorf("given user does not have access to prescription")
 
 }
 
@@ -177,6 +202,22 @@ func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return err
 	}
+
+	// Get Old Prescription Set
+	oldpset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return err
+	}
+	if oldpset == nil {
+		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
+	}
+
+	// Confirm that user has access to this prescription in particular
+	err = verifyClientAccess(ctx, string(oldpset))
+	if err != nil {
+		return err
+	}
+
 	err = ctx.GetStub().DelPrivateData(collectionPrescription, pid)
 	if err != nil {
 		return fmt.Errorf("error in deleting prescription data: %v", err)

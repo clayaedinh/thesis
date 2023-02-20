@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -13,8 +14,71 @@ WARNING
 
 It is best to use -benchtime=x instead of -benchtime=s
 So that the number of iterations (and prescriptions made) is consistent
+*/
+
+/*
+NOTICE
+
+In practice, update and setfill time should add report generation time - since reports need to be generated every time
+there is an update or setfills
 
 */
+
+var keyname []string
+
+func BenchmarkGenerateKey(b *testing.B) {
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		new_key := fmt.Sprintf("benchtest%v", i)
+		keyname = append(keyname, new_key)
+		src.GenerateUserKeyFiles(new_key)
+	}
+
+}
+
+func BenchmarkStoreKey(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		src.ChainStoreLocalPubkey(contract, keyname[keyNum])
+	}
+}
+
+func BenchmarkReadKey(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		src.ChainRetrievePubkey(contract, keyname[keyNum])
+	}
+}
 
 var pids []string
 
@@ -166,6 +230,65 @@ func BenchmarkSetfillPrescription(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
 		src.ChainSetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100)))
+	}
+}
+
+func BenchmarkReportRegister(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	for i := 0; i < b.N; i++ {
+		src.ChainReportAddReader(contract)
+	}
+}
+
+func BenchmarkReportUpdate(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	for i := 0; i < b.N; i++ {
+		pidsNum := i % len(pids)
+		src.ChainReportUpdate(contract, pids[pidsNum])
+	}
+}
+
+func BenchmarkReportRead(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	for i := 0; i < b.N; i++ {
+		src.ChainReportView(contract)
+
 	}
 }
 

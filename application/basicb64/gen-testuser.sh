@@ -51,6 +51,7 @@ createUsers () {
     createUser "0001" 1 "DOCTOR"
     createUser "0002" 1 "PATIENT"
     createUser "0003" 2 "PHARMA"  
+    createUser "0004" 1 "READER"
 }
 
 if [ "$1" = "help" ] || [ $# -eq 0 ]; then
