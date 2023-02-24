@@ -36,7 +36,7 @@ func BenchmarkCreatePrescription(b *testing.B) {
 
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
-		new_pid, _ := src.ChainCreatePrescription(contract)
+		new_pid := src.CreatePrescription(contract)
 		pids = append(pids, new_pid)
 	}
 }
@@ -61,7 +61,7 @@ func BenchmarkReadPrescription(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rand.Seed(time.Now().UnixNano())
 		randPIDNum := rand.Intn(len(pids) - 1)
-		src.ChainReadPrescription(contract, pids[randPIDNum])
+		src.ReadPrescription(contract, pids[randPIDNum])
 	}
 }
 

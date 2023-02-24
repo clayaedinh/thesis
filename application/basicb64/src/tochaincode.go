@@ -10,27 +10,45 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func ChainCreatePrescription(contract *client.Contract) (string, error) {
+/*
+Each function is awkwardly split into two, so that each half may be benchmarked
+*/
+
+func CreatePrescription(contract *client.Contract) string {
+	return SubmitCreatePrescription(contract, PrepareCreatePrescription())
+}
+func PrepareCreatePrescription() string {
 	var prescription Prescription
 	b64encrypted, err := packagePrescription(&prescription)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
+	return b64encrypted
+}
+func SubmitCreatePrescription(contract *client.Contract, b64encrypted string) string {
 	pid, err := contract.SubmitTransaction("CreatePrescription", b64encrypted)
 	if err != nil {
-		return "", ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return string(pid), nil
+	return string(pid)
 }
 
-func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
-	// Retrieve from smart contract
+func ReadPrescription(contract *client.Contract, pid string) *Prescription {
+	return ProcessReadPrescription(EvaluateReadPrescription(contract, pid))
+}
+func EvaluateReadPrescription(contract *client.Contract, pid string) string {
 	pdata, err := contract.EvaluateTransaction("ReadPrescription", pid, currentUserObscure())
 	if err != nil {
-		return nil, ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	// Unpackage and return the prescription
-	return unpackagePrescription(string(pdata))
+	return string(pdata)
+}
+func ProcessReadPrescription(pdata string) *Prescription {
+	prescription, err := unpackagePrescription(pdata)
+	if err != nil {
+		panic(err)
+	}
+	return prescription
 }
 
 func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
@@ -56,10 +74,8 @@ func ChainUpdatePrescription(contract *client.Contract, pid string, update *Pres
 }
 
 func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
-	prescription, err := ChainReadPrescription(contract, pid)
-	if err != nil {
-		return fmt.Errorf("failed to read prescription %v : %v", pid, err)
-	}
+	prescription := ReadPrescription(contract, pid)
+
 	prescription.PiecesFilled = newfill
 
 	b64prescription, err := packagePrescription(prescription)
