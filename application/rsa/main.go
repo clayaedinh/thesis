@@ -146,7 +146,7 @@ func main() {
 }
 
 func storekey(contract *client.Contract, username string) {
-	err := src.ChainStoreLocalPubkey(contract, username)
+	err := src.ChainSendPubkey(contract, username)
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +154,7 @@ func storekey(contract *client.Contract, username string) {
 }
 
 func getkey(contract *client.Contract, username string) {
-	out, err := src.ChainRetrievePubkey(contract, username)
+	out, err := src.ChainGetPubkey(contract, username)
 	if err != nil {
 		panic(err)
 	}

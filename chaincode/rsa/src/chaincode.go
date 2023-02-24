@@ -35,51 +35,59 @@ func obscureName(username string) string {
 	return hex.EncodeToString(raw[:])
 }
 
-// Verify if the given prescription set has a prescription encrypted with the current client
-func verifyClientAccess(ctx contractapi.TransactionContextInterface, b64pset string) error {
-
-	//get current user
-	currentUser, err := clientObscuredName(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Unpackage Prescription Set
-	pset, err := unpackagePrescriptionSet(string(b64pset))
-	if err != nil {
-		return err
-	}
-
-	_, exists := (*pset)[currentUser]
-	if !exists {
-		return fmt.Errorf("client does not have access to the given prescription set")
-	}
-	return nil
-}
-
-func clientObscuredName(ctx contractapi.TransactionContextInterface) (string, error) {
-	// Get Client Identity
-	b64ID, err := ctx.GetClientIdentity().GetID()
-	if err != nil {
-		return "", fmt.Errorf("failed to read clientID: %v", err)
-	}
-	//Decode Identity
-	identity, err := base64.StdEncoding.DecodeString(b64ID)
-	if err != nil {
-		return "", fmt.Errorf("failed to base64 decode clientID: %v", err)
-	}
-
-	cnregex, err := regexp.Compile(`CN=(\w*),`)
-	if err != nil {
-		panic(err)
-	}
-
-	username := cnregex.FindStringSubmatch(string(identity))[1]
-	return obscureName(username), nil
-}
-
 func genPrescriptionId() string {
 	rand.Seed(time.Now().UnixNano())
 	pid := rand.Uint64()
 	return fmt.Sprintf("%v", pid)
+}
+
+func checkIfUserPubkeyExists(ctx contractapi.TransactionContextInterface, obscuredName string) error {
+	//verify if user has public key information (i.e. if the user exists properly)
+	val, err := ctx.GetStub().GetPrivateData(collectionPubkeyRSA, obscuredName)
+	if err != nil {
+		return fmt.Errorf("failed to verify if user has RSA public key information :%v", err)
+	}
+	if val == nil {
+		return fmt.Errorf("given user does not have RSA public key information")
+	}
+	return nil
+}
+
+// ============================================================ //
+// Unpackage & Check Access
+// unpackages a set of prescriptions, checks if current user
+// has access to any of the prescriptions inside of it
+// ============================================================ //
+func unpackageAndCheckAccess(ctx contractapi.TransactionContextInterface, b64pset string, obscureName string) (*map[string]string, error) {
+	pset, err := unpackagePrescriptionSet(string(b64pset))
+	if err != nil {
+		return nil, err
+	}
+	_, exists := (*pset)[obscureName]
+	if !exists {
+		return nil, fmt.Errorf("client does not have access to the given prescription set")
+	}
+	return pset, nil
+}
+
+// ============================================================ //
+// CLIENT IDENTITY
+// From certificate, get identity, obscured name, and check
+// if user if allowed to access chaincode
+// ============================================================ //
+func clientObscuredName(ctx contractapi.TransactionContextInterface) string {
+	b64ID, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		panic(fmt.Errorf("failed to read clientID: %v", err))
+	}
+	identity, err := base64.StdEncoding.DecodeString(b64ID)
+	if err != nil {
+		panic(fmt.Errorf("failed to base64 decode clientID: %v", err))
+	}
+	cnregex, err := regexp.Compile(`CN=(\w*),`)
+	if err != nil {
+		panic(err)
+	}
+	username := cnregex.FindStringSubmatch(string(identity))[1]
+	return obscureName(username)
 }

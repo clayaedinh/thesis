@@ -11,8 +11,12 @@ import (
 )
 
 func ChainCreatePrescription(contract *client.Contract) (string, error) {
-	// Invoke Chaincode
-	pid, err := contract.SubmitTransaction("CreatePrescription")
+	var prescription Prescription
+	b64encrypted, err := packagePrescription(&prescription)
+	if err != nil {
+		return "", err
+	}
+	pid, err := contract.SubmitTransaction("CreatePrescription", b64encrypted)
 	if err != nil {
 		return "", ChaincodeParseError(err)
 	}
@@ -31,8 +35,7 @@ func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription
 
 func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
 	obscureName := obscureName(username)
-
-	//Save prescription with tag
+	// Invoke Share Prescription on chaincode
 	_, err := contract.SubmitTransaction("SharePrescription", pid, obscureName)
 	if err != nil {
 		return ChaincodeParseError(err)

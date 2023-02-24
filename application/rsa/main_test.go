@@ -36,7 +36,7 @@ func BenchmarkGenerateKey(b *testing.B) {
 
 }
 
-func BenchmarkStoreKey(b *testing.B) {
+func BenchmarkSendKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -54,11 +54,11 @@ func BenchmarkStoreKey(b *testing.B) {
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
-		src.ChainStoreLocalPubkey(contract, keyname[keyNum])
+		src.ChainSendPubkey(contract, keyname[keyNum])
 	}
 }
 
-func BenchmarkReadKey(b *testing.B) {
+func BenchmarkGetKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -76,7 +76,7 @@ func BenchmarkReadKey(b *testing.B) {
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
-		src.ChainRetrievePubkey(contract, keyname[keyNum])
+		src.ChainGetPubkey(contract, keyname[keyNum])
 	}
 }
 

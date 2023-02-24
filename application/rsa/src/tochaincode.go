@@ -16,7 +16,7 @@ import (
 // RSA Key Management
 // ========================================
 
-func ChainStoreLocalPubkey(contract *client.Contract, username string) error {
+func ChainSendPubkey(contract *client.Contract, username string) error {
 	obscureName := obscureName(username)
 	pubkey, err := readLocalKey(obscureName, pubFilename)
 	if err != nil {
@@ -32,12 +32,12 @@ func ChainStoreLocalPubkey(contract *client.Contract, username string) error {
 	return nil
 }
 
-func ChainRetrievePubkey(contract *client.Contract, username string) (*rsa.PublicKey, error) {
+func ChainGetPubkey(contract *client.Contract, username string) (*rsa.PublicKey, error) {
 	obscureName := obscureName(username)
-	return chainRetrievePubkeyWObscure(contract, obscureName)
+	return chainGetPubkeyObscuredName(contract, obscureName)
 }
 
-func chainRetrievePubkeyWObscure(contract *client.Contract, obscureName string) (*rsa.PublicKey, error) {
+func chainGetPubkeyObscuredName(contract *client.Contract, obscureName string) (*rsa.PublicKey, error) {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", obscureName)
 	if err != nil {
 		return nil, ChaincodeParseError(err)
@@ -52,79 +52,21 @@ func chainRetrievePubkeyWObscure(contract *client.Contract, obscureName string) 
 	return parsePubkey(decoded)
 }
 
-// =============================================
-// Create Prescription
-// Creates a completely BLANK prescription
-// =============================================
-
 func ChainCreatePrescription(contract *client.Contract) (string, error) {
-	// Create a new, blank prescription
 	var prescription Prescription
-
-	// Get current user pubkey
 	pubkey, err := readLocalPubkey(currentUserObscure())
 	if err != nil {
 		return "", err
 	}
-	// package the blank prescription
 	b64encrypted, err := packagePrescription(pubkey, &prescription)
 	if err != nil {
 		return "", err
 	}
-
 	pid, err := contract.SubmitTransaction("CreatePrescription", b64encrypted)
 	if err != nil {
 		return "", ChaincodeParseError(err)
 	}
 	return string(pid), nil
-
-}
-
-func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
-	// Get list of all users that the prescription was shared to
-	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
-	if err != nil {
-		return nil, ChaincodeParseError(err)
-	}
-	// base64 decode
-	sharedto, err := unpackageStringSlice(string(b64strings))
-	if err != nil {
-		return nil, err
-	}
-	return sharedto, nil
-}
-
-func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
-
-	usernames, err := ChainSharedToList(contract, pid)
-	if err != nil {
-		return err
-	}
-	pset := make(map[string]string)
-
-	//Encrypt for each username
-	for _, username := range *usernames {
-		pubkey, err := readLocalPubkey(username)
-		if err != nil {
-			return err
-		}
-		b64encrypted, err := packagePrescription(pubkey, update)
-		if err != nil {
-			return err
-		}
-		pset[username] = b64encrypted
-	}
-
-	b64gob, err := packagePrescriptionSet(&pset)
-	if err != nil {
-		return err
-	}
-
-	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
-	if err != nil {
-		return ChaincodeParseError(err)
-	}
-	return nil
 }
 
 func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
@@ -145,7 +87,7 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 		return err
 	}
 	//Request pubkey from username to share to
-	otherPubkey, err := ChainRetrievePubkey(contract, username)
+	otherPubkey, err := ChainGetPubkey(contract, username)
 	if err != nil {
 		return err
 	}
@@ -154,7 +96,6 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	if err != nil {
 		return err
 	}
-
 	//Save prescription with tag
 	_, err = contract.SubmitTransaction("SharePrescription", pid, obscureName, b64encrypted)
 	if err != nil {
@@ -162,9 +103,50 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	}
 	return nil
 }
+func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
+	// Get list of all users that the prescription was shared to
+	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
+	if err != nil {
+		return nil, ChaincodeParseError(err)
+	}
+	// base64 decode
+	sharedto, err := unpackageStringSlice(string(b64strings))
+	if err != nil {
+		return nil, err
+	}
+	return sharedto, nil
+}
+func reencryptPrescriptionSet(contract *client.Contract, pid string, update *Prescription) (string, error) {
+	usernames, err := ChainSharedToList(contract, pid)
+	if err != nil {
+		return "", err
+	}
+	pset := make(map[string]string)
+	//Encrypt for each username
+	for _, username := range *usernames {
+		pubkey, err := readLocalPubkey(username)
+		if err != nil {
+			return "", err
+		}
+		b64encrypted, err := packagePrescription(pubkey, update)
+		if err != nil {
+			return "", err
+		}
+		pset[username] = b64encrypted
+	}
+	b64gob, err := packagePrescriptionSet(&pset)
+	if err != nil {
+		return "", err
+	}
+	return b64gob, nil
+}
 
-func ChainDeletePrescription(contract *client.Contract, pid string) error {
-	_, err := contract.SubmitTransaction("DeletePrescription", pid)
+func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
+	b64gob, err := reencryptPrescriptionSet(contract, pid, update)
+	if err != nil {
+		return err
+	}
+	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
@@ -177,31 +159,20 @@ func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uin
 		return fmt.Errorf("failed to read prescription %v : %v", pid, err)
 	}
 	prescription.PiecesFilled = newfill
-	usernames, err := ChainSharedToList(contract, pid)
+
+	b64gob, err := reencryptPrescriptionSet(contract, pid, prescription)
 	if err != nil {
 		return err
 	}
-	pset := make(map[string]string)
-
-	//Encrypt for each username
-	for _, username := range *usernames {
-		pubkey, err := readLocalPubkey(username)
-		if err != nil {
-			return err
-		}
-		b64encrypted, err := packagePrescription(pubkey, prescription)
-		if err != nil {
-			return err
-		}
-		pset[username] = b64encrypted
-	}
-
-	b64gob, err := packagePrescriptionSet(&pset)
-	if err != nil {
-		return err
-	}
-
 	_, err = contract.SubmitTransaction("SetfillPrescription", pid, b64gob)
+	if err != nil {
+		return ChaincodeParseError(err)
+	}
+	return nil
+}
+
+func ChainDeletePrescription(contract *client.Contract, pid string) error {
+	_, err := contract.SubmitTransaction("DeletePrescription", pid)
 	if err != nil {
 		return ChaincodeParseError(err)
 	}
@@ -228,10 +199,11 @@ func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 	return strings, nil
 }
 
-// Encrypts the given prescription at the given pid for all report readers
-// Probably has to be called every time prescription is updated
-// ^ this is why role-based encryption is better
-
+/*
+Encrypts the given prescription at the given pid for all report readers
+Probably has to be called every time prescription is updated
+this is why role-based encryption is better
+*/
 func ChainReportUpdate(contract *client.Contract, pid string) error {
 	readers, err := ChainReportGetReaders(contract)
 	if err != nil {
@@ -242,9 +214,8 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 		return err
 	}
 	pset := make(map[string]string)
-
 	for _, obscuredName := range *readers {
-		pubkey, err := chainRetrievePubkeyWObscure(contract, obscuredName)
+		pubkey, err := chainGetPubkeyObscuredName(contract, obscuredName)
 		if err != nil {
 			return err
 		}
@@ -254,7 +225,6 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 		}
 		pset[obscuredName] = b64encrypted
 	}
-
 	b64reports, err := packagePrescriptionSet(&pset)
 	if err != nil {
 		return err
@@ -266,9 +236,7 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 	return nil
 }
 
-// If this works I will be amazed
 func ChainReportView(contract *client.Contract) (string, error) {
-
 	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport")
 	if err != nil {
 		return "", err
