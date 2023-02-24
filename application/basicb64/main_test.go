@@ -82,7 +82,7 @@ func BenchmarkSharePrescription(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
-		src.ChainSharePrescription(contract, pids[pidsNum], "user0001")
+		src.SharePrescription(contract, pids[pidsNum], "user0001")
 	}
 }
 
@@ -120,10 +120,12 @@ func BenchmarkUpdatePrescription(b *testing.B) {
 			PiecesTotal:    uint8(rand.Intn(100)),
 			PiecesFilled:   0,
 		}
-		src.ChainUpdatePrescription(contract, pids[pidsNum], &prescription)
+		src.UpdatePrescription(contract, pids[pidsNum], &prescription)
 	}
 }
 
+// for later: try using b.run
+/*
 // this is only here so that BenchmarkSetfillPrescription Works
 func BenchmarkSharePrescriptionTest2(b *testing.B) {
 	// Connection Phase
@@ -142,9 +144,10 @@ func BenchmarkSharePrescriptionTest2(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
-		src.ChainSharePrescription(contract, pids[pidsNum], "user0003")
+		ChainSharePrescription(contract, pids[pidsNum], "user0003")
 	}
 }
+*/
 
 func BenchmarkSetfillPrescription(b *testing.B) {
 	// Connection Phase
@@ -165,7 +168,7 @@ func BenchmarkSetfillPrescription(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
-		src.ChainSetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100)))
+		src.SetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100)))
 	}
 }
 
@@ -206,6 +209,6 @@ func BenchmarkReportRead(b *testing.B) {
 	defer gw.Close()
 	contract := src.SmartContract(gw)
 	for i := 0; i < b.N; i++ {
-		src.ChainReportView(contract)
+		src.ReportView(contract)
 	}
 }

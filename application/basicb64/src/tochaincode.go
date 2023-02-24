@@ -14,6 +14,9 @@ import (
 Each function is awkwardly split into two, so that each half may be benchmarked
 */
 
+// ============================================================ //
+// Create Prescription
+// ============================================================ //
 func CreatePrescription(contract *client.Contract) string {
 	return SubmitCreatePrescription(contract, PrepareCreatePrescription())
 }
@@ -33,6 +36,9 @@ func SubmitCreatePrescription(contract *client.Contract, b64encrypted string) st
 	return string(pid)
 }
 
+// ============================================================ //
+// Read Prescription
+// ============================================================ //
 func ReadPrescription(contract *client.Contract, pid string) *Prescription {
 	return ProcessReadPrescription(EvaluateReadPrescription(contract, pid))
 }
@@ -51,44 +57,63 @@ func ProcessReadPrescription(pdata string) *Prescription {
 	return prescription
 }
 
-func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
+// ============================================================ //
+// Share Prescription (not split because it's 100% chaincode anyway)
+// ============================================================ //
+func SharePrescription(contract *client.Contract, pid string, username string) {
 	obscureName := obscureName(username)
 	// Invoke Share Prescription on chaincode
 	_, err := contract.SubmitTransaction("SharePrescription", pid, obscureName)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
-func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
+// ============================================================ //
+// Update Prescription
+// ============================================================ //
+func UpdatePrescription(contract *client.Contract, pid string, update *Prescription) {
+	SubmitUpdatePrescription(contract, pid, PrepareUpdatePrescription(update))
+}
+func PrepareUpdatePrescription(update *Prescription) string {
 	b64prescription, err := packagePrescription(update)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64prescription)
+	return b64prescription
+}
+func SubmitUpdatePrescription(contract *client.Contract, pid string, b64prescription string) {
+	_, err := contract.SubmitTransaction("UpdatePrescription", pid, b64prescription)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
-func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
+// ============================================================ //
+// Setfill Prescription
+// ============================================================ //
+func SetfillPrescription(contract *client.Contract, pid string, newfill uint8) {
+	SubmitSetfillPrescription(contract, pid, PrepareSetfillPrescription(contract, pid, newfill))
+}
+func PrepareSetfillPrescription(contract *client.Contract, pid string, newfill uint8) string {
 	prescription := ReadPrescription(contract, pid)
-
 	prescription.PiecesFilled = newfill
-
 	b64prescription, err := packagePrescription(prescription)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, err = contract.SubmitTransaction("SetfillPrescription", pid, b64prescription)
+	return b64prescription
+}
+func SubmitSetfillPrescription(contract *client.Contract, pid string, b64prescription string) {
+	_, err := contract.SubmitTransaction("SetfillPrescription", pid, b64prescription)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
+// ============================================================ //
+// Delete Prescription (also not split because it's 100% chaincode)
+// ============================================================ //
 func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	_, err := contract.SubmitTransaction("DeletePrescription", pid)
 	if err != nil {
@@ -97,16 +122,25 @@ func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	return nil
 }
 
-func ChainReportView(contract *client.Contract) (*[]string, error) {
-	b64report, err := contract.SubmitTransaction("GetPrescriptionReport")
+// ============================================================ //
+// Report View
+// ============================================================ //
+func ReportView(contract *client.Contract) *[]string {
+	return ProcessReportView(EvaluateReportView(contract))
+}
+func EvaluateReportView(contract *client.Contract) string {
+	b64report, err := contract.EvaluateTransaction("GetPrescriptionReport")
 	if err != nil {
-		return nil, ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	report, err := unpackageStringSlice(string(b64report))
+	return string(b64report)
+}
+func ProcessReportView(b64report string) *[]string {
+	report, err := unpackageStringSlice(b64report)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	return report, nil
+	return report
 }
 
 // From Fabric Samples: Basic Asset Transfer (Gateway), Golang
