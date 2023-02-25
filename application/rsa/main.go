@@ -138,8 +138,6 @@ func main() {
 		reportgen(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "reportread" {
 		reportread(contract)
-	} else if flag.Arg(0) == "test01" {
-		test01()
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -270,8 +268,4 @@ func checkEnoughArgs(expected int) {
 	if len(flag.Args()) < expected {
 		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))
 	}
-}
-
-func test01() {
-	fmt.Printf("%v", src.BlankPackagedPrescription())
 }
