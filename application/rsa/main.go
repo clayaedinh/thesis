@@ -176,10 +176,7 @@ func sharep(contract *client.Contract, pid string, username string) {
 }
 
 func sharedto(contract *client.Contract, pid string) {
-	list, err := src.ChainSharedToList(contract, pid)
-	if err != nil {
-		panic(err)
-	}
+	list := src.SharedToList(contract, pid)
 	fmt.Printf("list: %v\n", list)
 }
 
@@ -190,12 +187,8 @@ func updatep(contract *client.Contract, args []string) {
 }
 
 func deletep(contract *client.Contract, pid string) {
-	err := src.ChainDeletePrescription(contract, pid)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vDelete Prescription Successful%v\n", GREEN, NC)
-	}
+	src.DeletePrescription(contract, pid)
+	fmt.Printf("%vDelete Prescription Successful%v\n", GREEN, NC)
 }
 
 func setfillp(contract *client.Contract, pid string, newfill string) {
@@ -216,18 +209,12 @@ func readeradd(contract *client.Contract) {
 }
 
 func reportgen(contract *client.Contract, pid string) {
-	err := src.ChainReportUpdate(contract, pid)
-	if err != nil {
-		panic(err)
-	}
+	src.ReportUpdate(contract, pid)
 	fmt.Printf("%vReports generated successfully%v\n", GREEN, NC)
 }
 
 func reportread(contract *client.Contract) {
-	output, err := src.ChainReportView(contract)
-	if err != nil {
-		panic(err)
-	}
+	output := src.ReportView(contract)
 	fmt.Printf("%v", output)
 	fmt.Printf("%vReports displayed successfully%v\n", GREEN, NC)
 }

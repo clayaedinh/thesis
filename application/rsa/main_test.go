@@ -514,6 +514,7 @@ func BenchmarkSetfillSubmit(b *testing.B) {
 
 // ======================================================================//
 // Report Register
+// Has no application stage, so only one benchmark
 // ======================================================================//
 func BenchmarkReportRegister(b *testing.B) {
 	// Connection Phase
@@ -557,7 +558,52 @@ func BenchmarkReportUpdate(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
-		src.ChainReportUpdate(contract, pids[pidsNum])
+		src.ReportUpdate(contract, pids[pidsNum])
+	}
+}
+
+var reportupdate []string
+
+func BenchmarkReportUpdatePrepare(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		pidsNum := i % len(pids)
+		reportupdate = append(reportupdate, src.PrepareReportUpdate(contract, pids[pidsNum]))
+	}
+}
+func BenchmarkReportUpdateSubmit(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		pidsNum := i % len(pids)
+		src.SubmitReportUpdate(contract, pids[pidsNum], reportupdate[pidsNum])
 	}
 }
 
@@ -581,13 +627,43 @@ func BenchmarkReportRead(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		src.ChainReportView(contract)
+		src.ReportView(contract)
+
+	}
+}
+
+var reportview []string
+
+func BenchmarkReportReadEvaluate(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		reportview = append(reportview, src.EvaluateReportView(contract))
+	}
+}
+func BenchmarkReportReadProcess(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		src.ProcessReportView(reportview[i])
 
 	}
 }
 
 // ======================================================================//
 // Delete Prescription
+// Has no application stage, so only one benchmark
 // ======================================================================//
 func BenchmarkDelete(b *testing.B) {
 	// Connection Phase
@@ -609,6 +685,6 @@ func BenchmarkDelete(b *testing.B) {
 		if i >= len(pids) {
 			break
 		}
-		src.ChainDeletePrescription(contract, pids[i])
+		src.DeletePrescription(contract, pids[i])
 	}
 }

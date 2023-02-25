@@ -142,28 +142,25 @@ func SubmitSharePrescription(contract *client.Contract, pid string, obscureName 
 	}
 }
 
-func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
+func SharedToList(contract *client.Contract, pid string) *[]string {
 	// Get list of all users that the prescription was shared to
 	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
 	if err != nil {
-		return nil, ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
 	// base64 decode
 	sharedto, err := unpackageStringSlice(string(b64strings))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	return sharedto, nil
+	return sharedto
 }
 
 // ====================================================================//
 // Re-encrypt Prescription Set
 // ====================================================================//
 func reencryptPrescriptionSet(contract *client.Contract, pid string, update *Prescription) (string, error) {
-	usernames, err := ChainSharedToList(contract, pid)
-	if err != nil {
-		return "", err
-	}
+	usernames := SharedToList(contract, pid)
 	pset := make(map[string]string)
 	//Encrypt for each username
 	for _, username := range *usernames {
@@ -231,12 +228,11 @@ func SubmitSetfillPrescription(contract *client.Contract, pid string, b64gob str
 // ====================================================================//
 // Delete Prescription
 // ====================================================================//
-func ChainDeletePrescription(contract *client.Contract, pid string) error {
+func DeletePrescription(contract *client.Contract, pid string) {
 	_, err := contract.SubmitTransaction("DeletePrescription", pid)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
 // ====================================================================//
@@ -268,10 +264,14 @@ func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 // ====================================================================//
 // Report Update
 // ====================================================================//
-func ChainReportUpdate(contract *client.Contract, pid string) error {
+func ReportUpdate(contract *client.Contract, pid string) {
+	SubmitReportUpdate(contract, pid, PrepareReportUpdate(contract, pid))
+}
+
+func PrepareReportUpdate(contract *client.Contract, pid string) string {
 	readers, err := ChainReportGetReaders(contract)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	prescription := ReadPrescription(contract, pid)
 
@@ -280,43 +280,52 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 		pubkey := GetPubkey(contract, obscuredName)
 		b64encrypted, err := packagePrescription(pubkey, prescription)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		pset[obscuredName] = b64encrypted
 	}
 	b64reports, err := packagePrescriptionSet(&pset)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, err = contract.SubmitTransaction("UpdateReport", pid, b64reports)
+	return b64reports
+}
+
+func SubmitReportUpdate(contract *client.Contract, pid string, b64reports string) {
+	_, err := contract.SubmitTransaction("UpdateReport", pid, b64reports)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
 // ====================================================================//
 // Report View
 // ====================================================================//
-func ChainReportView(contract *client.Contract) (string, error) {
+func ReportView(contract *client.Contract) string {
+	return ProcessReportView(EvaluateReportView(contract))
+}
+func EvaluateReportView(contract *client.Contract) string {
 	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport")
 	if err != nil {
-		return "", err
+		panic(err)
 	}
+	return string(b64all)
+}
+func ProcessReportView(b64all string) string {
 	prescriptions, err := unpackagePrescriptionSet(string(b64all))
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	var output string
 	for _, pdata := range *prescriptions {
 		prescription, err := unpackagePrescription(pdata)
 		if err != nil {
-			return "", err
+			panic(err)
 		}
 		output += fmt.Sprintf("prescription: %v\n", prescription)
 	}
 
-	return output, nil
+	return output
 }
 
 func ChaincodeParseError(err error) error {
