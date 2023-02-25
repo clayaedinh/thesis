@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ========================================
+// ====================================================================//
 // Send Pubkey
-// ========================================
+// ====================================================================//
 func SendPubkey(contract *client.Contract, username string) {
 	obscureName, b64pubkey := PrepareSendPubkey(username)
 	SubmitSendPubkey(contract, obscureName, b64pubkey)
@@ -35,9 +35,9 @@ func SubmitSendPubkey(contract *client.Contract, obscureName string, b64pubkey s
 	}
 }
 
-// ========================================
+// ====================================================================//
 // Get Pubkey
-// ========================================
+// ====================================================================//
 func GetPubkey(contract *client.Contract, obscureName string) *rsa.PublicKey {
 	return ProcessGetPubkey(EvaluateGetPubkey(contract, obscureName))
 }
@@ -63,6 +63,9 @@ func ProcessGetPubkey(evaluateResult string) *rsa.PublicKey {
 	return pubkey
 }
 
+// ====================================================================//
+// Create Prescription
+// ====================================================================//
 func CreatePrescription(contract *client.Contract) string {
 	return SubmitCreatePrescription(contract, PrepareCreatePrescription())
 }
@@ -86,6 +89,9 @@ func SubmitCreatePrescription(contract *client.Contract, b64encrypted string) st
 	return string(pid)
 }
 
+// ====================================================================//
+// Read Prescription
+// ====================================================================//
 func ReadPrescription(contract *client.Contract, pid string) *Prescription {
 	return ProcessReadPrescription(EvaluateReadPrescription(contract, pid))
 }
@@ -106,6 +112,9 @@ func ProcessReadPrescription(pdata string) *Prescription {
 	return out
 }
 
+// ====================================================================//
+// Share Prescription
+// ====================================================================//
 func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
 	obscureName := obscureName(username)
 	//Retrieve prescription with current user credentials
@@ -125,6 +134,7 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	}
 	return nil
 }
+
 func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
 	// Get list of all users that the prescription was shared to
 	b64strings, err := contract.EvaluateTransaction("PrescriptionSharedTo", pid)
@@ -138,6 +148,10 @@ func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error)
 	}
 	return sharedto, nil
 }
+
+// ====================================================================//
+// Re-encrypt Prescription Set
+// ====================================================================//
 func reencryptPrescriptionSet(contract *client.Contract, pid string, update *Prescription) (string, error) {
 	usernames, err := ChainSharedToList(contract, pid)
 	if err != nil {
@@ -163,6 +177,9 @@ func reencryptPrescriptionSet(contract *client.Contract, pid string, update *Pre
 	return b64gob, nil
 }
 
+// ====================================================================//
+// Update Prescription
+// ====================================================================//
 func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
 	b64gob, err := reencryptPrescriptionSet(contract, pid, update)
 	if err != nil {
@@ -175,6 +192,9 @@ func ChainUpdatePrescription(contract *client.Contract, pid string, update *Pres
 	return nil
 }
 
+// ====================================================================//
+// Setfill Prescription
+// ====================================================================//
 func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
 	prescription := ReadPrescription(contract, pid)
 
@@ -191,6 +211,9 @@ func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uin
 	return nil
 }
 
+// ====================================================================//
+// Delete Prescription
+// ====================================================================//
 func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	_, err := contract.SubmitTransaction("DeletePrescription", pid)
 	if err != nil {
@@ -199,6 +222,9 @@ func ChainDeletePrescription(contract *client.Contract, pid string) error {
 	return nil
 }
 
+// ====================================================================//
+// Report Register
+// ====================================================================//
 func ChainReportAddReader(contract *client.Contract) error {
 	_, err := contract.SubmitTransaction("RegisterMeAsReportReader")
 	if err != nil {
@@ -207,6 +233,9 @@ func ChainReportAddReader(contract *client.Contract) error {
 	return nil
 }
 
+// ====================================================================//
+// Report Get Readers
+// ====================================================================//
 func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 	b64readers, err := contract.EvaluateTransaction("GetAllReportReaders")
 	if err != nil {
@@ -219,11 +248,9 @@ func ChainReportGetReaders(contract *client.Contract) (*[]string, error) {
 	return strings, nil
 }
 
-/*
-Encrypts the given prescription at the given pid for all report readers
-Probably has to be called every time prescription is updated
-this is why role-based encryption is better
-*/
+// ====================================================================//
+// Report Update
+// ====================================================================//
 func ChainReportUpdate(contract *client.Contract, pid string) error {
 	readers, err := ChainReportGetReaders(contract)
 	if err != nil {
@@ -251,6 +278,9 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 	return nil
 }
 
+// ====================================================================//
+// Report View
+// ====================================================================//
 func ChainReportView(contract *client.Contract) (string, error) {
 	b64all, err := contract.EvaluateTransaction("GetPrescriptionReport")
 	if err != nil {
