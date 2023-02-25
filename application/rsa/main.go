@@ -144,18 +144,13 @@ func main() {
 }
 
 func storekey(contract *client.Contract, username string) {
-	err := src.ChainSendPubkey(contract, username)
-	if err != nil {
-		panic(err)
-	}
+	src.SendPubkey(contract, username)
 	fmt.Printf("%vKey stored successfully for user %v%v\n", GREEN, username, NC)
 }
 
 func getkey(contract *client.Contract, username string) {
-	out, err := src.ChainGetPubkey(contract, username)
-	if err != nil {
-		panic(err)
-	}
+	obscureName := src.ObscureName(username)
+	out := src.GetPubkey(contract, obscureName)
 	fmt.Print(out)
 	fmt.Printf("\n%vKey retrieved successfully for user %v%v\n", GREEN, username, NC)
 }

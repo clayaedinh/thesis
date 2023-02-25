@@ -54,7 +54,41 @@ func BenchmarkSendKey(b *testing.B) {
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
-		src.ChainSendPubkey(contract, keyname[keyNum])
+		src.SendPubkey(contract, keyname[keyNum])
+	}
+}
+
+var keyobsname []string
+var keys []string
+
+func BenchmarkSendKeyPrepare(b *testing.B) {
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		newobs, newkey := src.PrepareSendPubkey(keyname[keyNum])
+		keyobsname = append(keyobsname, newobs)
+		keys = append(keys, newkey)
+	}
+}
+func BenchmarkSendKeySubmit(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		src.SubmitSendPubkey(contract, keyobsname[keyNum], keys[keyNum])
 	}
 }
 
@@ -76,7 +110,38 @@ func BenchmarkGetKey(b *testing.B) {
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
-		src.ChainGetPubkey(contract, keyname[keyNum])
+		src.GetPubkey(contract, src.ObscureName(keyname[keyNum]))
+	}
+}
+
+var getkeyout []string
+
+func BenchmarkGetKeyEvaluate(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		getkeyout = append(getkeyout, src.EvaluateGetPubkey(contract, src.ObscureName(keyname[keyNum])))
+	}
+}
+func BenchmarkGetKeyProcess(b *testing.B) {
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		keyNum := i % len(keyname)
+		src.ProcessGetPubkey(getkeyout[keyNum])
 	}
 }
 

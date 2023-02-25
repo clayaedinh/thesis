@@ -13,43 +13,54 @@ import (
 )
 
 // ========================================
-// RSA Key Management
+// Send Pubkey
 // ========================================
-
-func ChainSendPubkey(contract *client.Contract, username string) error {
+func SendPubkey(contract *client.Contract, username string) {
+	obscureName, b64pubkey := PrepareSendPubkey(username)
+	SubmitSendPubkey(contract, obscureName, b64pubkey)
+}
+func PrepareSendPubkey(username string) (string, string) {
 	obscureName := obscureName(username)
 	pubkey, err := readLocalKey(obscureName, pubFilename)
 	if err != nil {
-		return err
+		panic(err)
 	}
+	return obscureName, base64.StdEncoding.EncodeToString(pubkey)
 
-	b64pubkey := base64.StdEncoding.EncodeToString(pubkey)
-
-	_, err = contract.SubmitTransaction("StoreUserRSAPubkey", obscureName, b64pubkey)
+}
+func SubmitSendPubkey(contract *client.Contract, obscureName string, b64pubkey string) {
+	_, err := contract.SubmitTransaction("StoreUserRSAPubkey", obscureName, b64pubkey)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
-func ChainGetPubkey(contract *client.Contract, username string) (*rsa.PublicKey, error) {
-	obscureName := obscureName(username)
-	return chainGetPubkeyObscuredName(contract, obscureName)
+// ========================================
+// Get Pubkey
+// ========================================
+func GetPubkey(contract *client.Contract, obscureName string) *rsa.PublicKey {
+	return ProcessGetPubkey(EvaluateGetPubkey(contract, obscureName))
 }
-
-func chainGetPubkeyObscuredName(contract *client.Contract, obscureName string) (*rsa.PublicKey, error) {
+func EvaluateGetPubkey(contract *client.Contract, obscureName string) string {
 	evaluateResult, err := contract.EvaluateTransaction("RetrieveUserRSAPubkey", obscureName)
 	if err != nil {
-		return nil, ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
 	if evaluateResult == nil {
-		return nil, fmt.Errorf("error: pubkey retrieved for user '%v' is nil", obscureName)
+		panic(fmt.Errorf("error: pubkey retrieved for user '%v' is nil", obscureName))
 	}
+	return string(evaluateResult)
+}
+func ProcessGetPubkey(evaluateResult string) *rsa.PublicKey {
 	decoded, err := base64.StdEncoding.DecodeString(string(evaluateResult))
 	if err != nil {
-		return nil, fmt.Errorf("base64 decoding failed on retrieved pubkey: %v", err)
+		panic(fmt.Errorf("base64 decoding failed on retrieved pubkey: %v", err))
 	}
-	return parsePubkey(decoded)
+	pubkey, err := parsePubkey(decoded)
+	if err != nil {
+		panic(err)
+	}
+	return pubkey
 }
 
 func ChainCreatePrescription(contract *client.Contract) (string, error) {
@@ -87,10 +98,8 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 		return err
 	}
 	//Request pubkey from username to share to
-	otherPubkey, err := ChainGetPubkey(contract, username)
-	if err != nil {
-		return err
-	}
+	otherPubkey := GetPubkey(contract, obscureName)
+
 	//Re-encrypt the prescription with the new user credentials
 	b64encrypted, err := packagePrescription(otherPubkey, prescription)
 	if err != nil {
@@ -215,10 +224,7 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 	}
 	pset := make(map[string]string)
 	for _, obscuredName := range *readers {
-		pubkey, err := chainGetPubkeyObscuredName(contract, obscuredName)
-		if err != nil {
-			return err
-		}
+		pubkey := GetPubkey(contract, obscuredName)
 		b64encrypted, err := packagePrescription(pubkey, prescription)
 		if err != nil {
 			return err

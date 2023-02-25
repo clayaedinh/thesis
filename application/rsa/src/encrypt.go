@@ -104,6 +104,10 @@ func obscureName(username string) string {
 	raw := sha256.Sum256([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
+func ObscureName(username string) string {
+	raw := sha256.Sum256([]byte(username))
+	return hex.EncodeToString(raw[:])
+}
 
 // ===============================================
 // Key Generation
