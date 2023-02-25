@@ -1,1 +1,1 @@
-go test -bench=Bench -benchtime=10x
+go test -bench=Bench -benchtime=6x
