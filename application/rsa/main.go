@@ -171,10 +171,7 @@ func readp(contract *client.Contract, pid string) {
 }
 
 func sharep(contract *client.Contract, pid string, username string) {
-	err := src.ChainSharePrescription(contract, pid, username)
-	if err != nil {
-		panic(err)
-	}
+	src.SharePrescription(contract, pid, username)
 	fmt.Printf("%vShare Prescription Successful%v\n", GREEN, NC)
 }
 
@@ -188,12 +185,8 @@ func sharedto(contract *client.Contract, pid string) {
 
 func updatep(contract *client.Contract, args []string) {
 	cmdInput := src.PrescriptionFromCmdArgs(args[2], args[3], args[4], args[5], args[6], args[7], args[8])
-	err := src.ChainUpdatePrescription(contract, args[1], cmdInput)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
-	}
+	src.UpdatePrescription(contract, args[1], cmdInput)
+	fmt.Printf("%vUpdate Prescription Successful%v\n", GREEN, NC)
 }
 
 func deletep(contract *client.Contract, pid string) {
@@ -210,13 +203,8 @@ func setfillp(contract *client.Contract, pid string, newfill string) {
 	if err != nil {
 		panic(fmt.Errorf("failed to parse newfill into integer: %v", err))
 	}
-	err = src.ChainSetfillPrescription(contract, pid, uint8(newfillInt))
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vSetfill Prescription Successful%v\n", GREEN, NC)
-	}
-
+	src.SetfillPrescription(contract, pid, uint8(newfillInt))
+	fmt.Printf("%vSetfill Prescription Successful%v\n", GREEN, NC)
 }
 
 func readeradd(contract *client.Contract) {

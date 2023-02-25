@@ -115,7 +115,12 @@ func ProcessReadPrescription(pdata string) *Prescription {
 // ====================================================================//
 // Share Prescription
 // ====================================================================//
-func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
+func SharePrescription(contract *client.Contract, pid string, username string) {
+	obscureName, b64encrypted := PrepareSharePrescription(contract, pid, username)
+	SubmitSharePrescription(contract, pid, obscureName, b64encrypted)
+}
+
+func PrepareSharePrescription(contract *client.Contract, pid string, username string) (string, string) {
 	obscureName := obscureName(username)
 	//Retrieve prescription with current user credentials
 	prescription := ReadPrescription(contract, pid)
@@ -125,14 +130,16 @@ func ChainSharePrescription(contract *client.Contract, pid string, username stri
 	//Re-encrypt the prescription with the new user credentials
 	b64encrypted, err := packagePrescription(otherPubkey, prescription)
 	if err != nil {
-		return err
+		panic(err)
 	}
+	return obscureName, b64encrypted
+}
+func SubmitSharePrescription(contract *client.Contract, pid string, obscureName string, b64encrypted string) {
 	//Save prescription with tag
-	_, err = contract.SubmitTransaction("SharePrescription", pid, obscureName, b64encrypted)
+	_, err := contract.SubmitTransaction("SharePrescription", pid, obscureName, b64encrypted)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
 func ChainSharedToList(contract *client.Contract, pid string) (*[]string, error) {
@@ -180,35 +187,45 @@ func reencryptPrescriptionSet(contract *client.Contract, pid string, update *Pre
 // ====================================================================//
 // Update Prescription
 // ====================================================================//
-func ChainUpdatePrescription(contract *client.Contract, pid string, update *Prescription) error {
+func UpdatePrescription(contract *client.Contract, pid string, update *Prescription) {
+	SubmitUpdatePrescription(contract, pid, PrepareUpdatePrescription(contract, pid, update))
+}
+func PrepareUpdatePrescription(contract *client.Contract, pid string, update *Prescription) string {
 	b64gob, err := reencryptPrescriptionSet(contract, pid, update)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, err = contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
+	return b64gob
+}
+func SubmitUpdatePrescription(contract *client.Contract, pid string, b64gob string) {
+	_, err := contract.SubmitTransaction("UpdatePrescription", pid, b64gob)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
 // ====================================================================//
 // Setfill Prescription
 // ====================================================================//
-func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
+func SetfillPrescription(contract *client.Contract, pid string, newfill uint8) {
+	SubmitSetfillPrescription(contract, pid, PrepareSetfillPrescription(contract, pid, newfill))
+}
+func PrepareSetfillPrescription(contract *client.Contract, pid string, newfill uint8) string {
 	prescription := ReadPrescription(contract, pid)
 
 	prescription.PiecesFilled = newfill
 
 	b64gob, err := reencryptPrescriptionSet(contract, pid, prescription)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, err = contract.SubmitTransaction("SetfillPrescription", pid, b64gob)
+	return b64gob
+}
+func SubmitSetfillPrescription(contract *client.Contract, pid string, b64gob string) {
+	_, err := contract.SubmitTransaction("SetfillPrescription", pid, b64gob)
 	if err != nil {
-		return ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return nil
 }
 
 // ====================================================================//
