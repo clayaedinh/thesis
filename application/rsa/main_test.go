@@ -542,7 +542,7 @@ func BenchmarkReportRegister(b *testing.B) {
 // ======================================================================//
 func BenchmarkReportUpdate(b *testing.B) {
 	// Connection Phase
-	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	src.SetConnectionVariables("org1", "user0001", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
 		panic(err)
@@ -566,7 +566,7 @@ var reportupdate []string
 
 func BenchmarkReportUpdatePrepare(b *testing.B) {
 	// Connection Phase
-	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	src.SetConnectionVariables("org1", "user0001", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
 		panic(err)
@@ -587,7 +587,7 @@ func BenchmarkReportUpdatePrepare(b *testing.B) {
 }
 func BenchmarkReportUpdateSubmit(b *testing.B) {
 	// Connection Phase
-	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	src.SetConnectionVariables("org1", "user0001", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
 	if err != nil {
 		panic(err)
@@ -628,7 +628,6 @@ func BenchmarkReportRead(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		src.ReportView(contract)
-
 	}
 }
 
