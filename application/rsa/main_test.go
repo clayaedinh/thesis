@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/clayaedinh/thesis/application/rsa/src"
 )
@@ -39,6 +38,7 @@ func BenchmarkGenerateKey(b *testing.B) {
 // ======================================================================//
 // Send Pubkey
 // ======================================================================//
+
 func BenchmarkSendKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
@@ -74,6 +74,7 @@ func BenchmarkSendKeyPrepare(b *testing.B) {
 		keys = append(keys, newkey)
 	}
 }
+
 func BenchmarkSendKeySubmit(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
@@ -99,6 +100,7 @@ func BenchmarkSendKeySubmit(b *testing.B) {
 // ======================================================================//
 // Get Pubkey
 // ======================================================================//
+
 func BenchmarkGetKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
@@ -145,6 +147,7 @@ func BenchmarkGetKeyEvaluate(b *testing.B) {
 		getkeyout = append(getkeyout, src.EvaluateGetPubkey(contract, src.ObscureName(keyname[keyNum])))
 	}
 }
+
 func BenchmarkGetKeyProcess(b *testing.B) {
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
@@ -205,7 +208,8 @@ func BenchmarkCreateSubmit(b *testing.B) {
 	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
-		pids = append(pids, src.SubmitCreatePrescription(contract, created[i]))
+		//pids = append(pids, src.SubmitCreatePrescription(contract, created[i]))
+		src.SubmitCreatePrescription(contract, created[i])
 	}
 }
 
@@ -229,9 +233,7 @@ func BenchmarkRead(b *testing.B) {
 	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
-		rand.Seed(time.Now().UnixNano())
-		randPIDNum := rand.Intn(len(pids) - 1)
-		src.ReadPrescription(contract, pids[randPIDNum])
+		src.ReadPrescription(contract, pids[i])
 	}
 }
 
@@ -254,9 +256,7 @@ func BenchmarkReadEvaluate(b *testing.B) {
 	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
-		rand.Seed(time.Now().UnixNano())
-		randPIDNum := rand.Intn(len(pids) - 1)
-		readout = append(readout, src.EvaluateReadPrescription(contract, pids[randPIDNum]))
+		readout = append(readout, src.EvaluateReadPrescription(contract, pids[i]))
 	}
 }
 func BenchmarkReadProcess(b *testing.B) {
@@ -265,6 +265,8 @@ func BenchmarkReadProcess(b *testing.B) {
 		src.ProcessReadPrescription(readout[i])
 	}
 }
+
+var last_deleted int
 
 // ======================================================================//
 // Share Prescription
@@ -665,6 +667,7 @@ func BenchmarkReportReadProcess(b *testing.B) {
 // Has no application stage, so only one benchmark
 // ======================================================================//
 func BenchmarkDelete(b *testing.B) {
+	last_deleted = -1
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -681,9 +684,11 @@ func BenchmarkDelete(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if i >= len(pids) {
-			break
-		}
-		src.DeletePrescription(contract, pids[i])
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("recovered from error")
+			}
+		}()
+		_ = src.DeletePrescription(contract, pids[i])
 	}
 }

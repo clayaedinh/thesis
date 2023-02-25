@@ -70,7 +70,16 @@ func CreatePrescription(contract *client.Contract) string {
 	return SubmitCreatePrescription(contract, PrepareCreatePrescription())
 }
 func PrepareCreatePrescription() string {
-	var prescription Prescription
+	prescription := Prescription{
+		Brand:          "NULL",
+		Dosage:         "NULL",
+		PatientName:    "NULL",
+		PatientAddress: "NULL",
+		PrescriberName: "NULL",
+		PrescriberNo:   0,
+		PiecesFilled:   0,
+		PiecesTotal:    0,
+	}
 	pubkey, err := readLocalPubkey(currentUserObscure())
 	if err != nil {
 		panic(err)
@@ -228,11 +237,12 @@ func SubmitSetfillPrescription(contract *client.Contract, pid string, b64gob str
 // ====================================================================//
 // Delete Prescription
 // ====================================================================//
-func DeletePrescription(contract *client.Contract, pid string) {
+func DeletePrescription(contract *client.Contract, pid string) error {
 	_, err := contract.SubmitTransaction("DeletePrescription", pid)
 	if err != nil {
-		panic(ChaincodeParseError(err))
+		return ChaincodeParseError(err)
 	}
+	return nil
 }
 
 // ====================================================================//
@@ -318,11 +328,13 @@ func ProcessReportView(b64all string) string {
 	}
 	var output string
 	for _, pdata := range *prescriptions {
-		prescription, err := unpackagePrescription(pdata)
-		if err != nil {
-			panic(err)
+		if pdata != "" {
+			prescription, err := unpackagePrescription(pdata)
+			if err != nil {
+				panic(err)
+			}
+			output += fmt.Sprintf("prescription: %v\n", prescription)
 		}
-		output += fmt.Sprintf("prescription: %v\n", prescription)
 	}
 
 	return output

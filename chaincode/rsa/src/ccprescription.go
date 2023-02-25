@@ -217,7 +217,7 @@ func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInt
 		return err
 	}
 	if oldb64pset == nil {
-		return fmt.Errorf("cannot create prescription %v as it does not exist", pid)
+		return fmt.Errorf("cannot delete prescription %v as it does not exist", pid)
 	}
 	// Confirm that user has access to this prescription in particular
 	_, err = unpackageAndCheckAccess(ctx, string(oldb64pset), clientObscuredName(ctx))
