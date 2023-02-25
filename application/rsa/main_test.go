@@ -53,6 +53,7 @@ func BenchmarkSendKey(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
 
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
@@ -87,7 +88,7 @@ func BenchmarkSendKeySubmit(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
-
+	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
@@ -112,6 +113,7 @@ func BenchmarkGetKey(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
 
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
@@ -136,7 +138,7 @@ func BenchmarkGetKeyEvaluate(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
-
+	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		keyNum := i % len(keyname)
@@ -153,8 +155,10 @@ func BenchmarkGetKeyProcess(b *testing.B) {
 
 var pids []string
 
-func BenchmarkCreatePrescription(b *testing.B) {
-
+// ======================================================================//
+// Create Prescription
+// ======================================================================//
+func BenchmarkCreate(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -168,16 +172,23 @@ func BenchmarkCreatePrescription(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
-
+	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
-		new_pid, _ := src.ChainCreatePrescription(contract)
-		pids = append(pids, new_pid)
+		pids = append(pids, src.CreatePrescription(contract))
 	}
 }
 
-// please run BenchmarkCreatePrescription prior to this.
-func BenchmarkReadPrescription(b *testing.B) {
+var created []string
+
+func BenchmarkCreatePrepare(b *testing.B) {
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		created = append(created, src.PrepareCreatePrescription())
+	}
+}
+
+func BenchmarkCreateSubmit(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -191,16 +202,42 @@ func BenchmarkReadPrescription(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		pids = append(pids, src.SubmitCreatePrescription(contract, created[i]))
+	}
+}
 
+// ======================================================================//
+// Read Prescription
+// ======================================================================//
+func BenchmarkRead(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
 	//Runtime Phase
 	for i := 0; i < b.N; i++ {
 		rand.Seed(time.Now().UnixNano())
 		randPIDNum := rand.Intn(len(pids) - 1)
-		src.ChainReadPrescription(contract, pids[randPIDNum])
+		src.ReadPrescription(contract, pids[randPIDNum])
 	}
 }
 
-func BenchmarkSharePrescription(b *testing.B) {
+var readout []string
+
+func BenchmarkReadEvaluate(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
 	clientConnection, err := src.NewGrpcConnection()
@@ -214,13 +251,69 @@ func BenchmarkSharePrescription(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		rand.Seed(time.Now().UnixNano())
+		randPIDNum := rand.Intn(len(pids) - 1)
+		readout = append(readout, src.EvaluateReadPrescription(contract, pids[randPIDNum]))
+	}
+}
+func BenchmarkReadProcess(b *testing.B) {
+	//Runtime Phase
+	for i := 0; i < b.N; i++ {
+		src.ProcessReadPrescription(readout[i])
+	}
+}
 
+// ======================================================================//
+// Share Prescription
+// ======================================================================//
+func BenchmarkShareToDoctors(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
 		src.ChainSharePrescription(contract, pids[pidsNum], "user0001")
 	}
 }
 
+func BenchmarkShareToPharmacists(b *testing.B) {
+	// Connection Phase
+	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+	clientConnection, err := src.NewGrpcConnection()
+	if err != nil {
+		panic(err)
+	}
+	defer clientConnection.Close()
+	gw, err := src.DefaultGateway(clientConnection)
+	if err != nil {
+		panic(err)
+	}
+	defer gw.Close()
+	contract := src.SmartContract(gw)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pidsNum := i % len(pids)
+		src.ChainSharePrescription(contract, pids[pidsNum], "user0003")
+	}
+}
+
+// ======================================================================//
+// Update Prescription
+// ======================================================================//
 func BenchmarkUpdatePrescription(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0001", "localhost:7051")
@@ -242,7 +335,7 @@ func BenchmarkUpdatePrescription(b *testing.B) {
 	patients := []string{"Aedin", "Sean", "Lance", "Paolo", "Felizia", "Roswold", "Martina", "Christine", "Carmina", "Fide", "Migo", "Leanne", "Haze", "Kyle"}
 	doctors := []string{"Dr. Pulmano", "Dr. Tamayo", "Dr. Pangan", "Dr. Sugay", "Dr. Rodrigo", "Dr. Diy", "Dr. Abu", "Dr. Casano", "Dr. Estuar", "Dr. Montalan", "Dr. Jongko"}
 	addrs := []string{"Las Pinas", "Quezon City", "Pasay", "Naga", "Paranaque", "Pasig", "Taguig", "Muntinlupa", "Marikina", "Dasmarinas", "Santa Rosa"}
-
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
 		prescription := src.Prescription{
@@ -259,28 +352,9 @@ func BenchmarkUpdatePrescription(b *testing.B) {
 	}
 }
 
-// this is only here so that BenchmarkSetfillPrescription Works
-func BenchmarkSharePrescriptionTest2(b *testing.B) {
-	// Connection Phase
-	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
-	clientConnection, err := src.NewGrpcConnection()
-	if err != nil {
-		panic(err)
-	}
-	defer clientConnection.Close()
-	gw, err := src.DefaultGateway(clientConnection)
-	if err != nil {
-		panic(err)
-	}
-	defer gw.Close()
-	contract := src.SmartContract(gw)
-
-	for i := 0; i < b.N; i++ {
-		pidsNum := i % len(pids)
-		src.ChainSharePrescription(contract, pids[pidsNum], "user0003")
-	}
-}
-
+// ======================================================================//
+// Setfill Prescription
+// ======================================================================//
 func BenchmarkSetfillPrescription(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org2", "user0003", "localhost:9051")
@@ -295,7 +369,7 @@ func BenchmarkSetfillPrescription(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
-
+	b.ResetTimer()
 	// RANDOM PRESCRIPTION VARIABLES
 
 	for i := 0; i < b.N; i++ {
@@ -304,6 +378,9 @@ func BenchmarkSetfillPrescription(b *testing.B) {
 	}
 }
 
+// ======================================================================//
+// Report Register
+// ======================================================================//
 func BenchmarkReportRegister(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
@@ -318,11 +395,16 @@ func BenchmarkReportRegister(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		src.ChainReportAddReader(contract)
 	}
 }
 
+// ======================================================================//
+// Report Update
+// ======================================================================//
 func BenchmarkReportUpdate(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
@@ -337,12 +419,17 @@ func BenchmarkReportUpdate(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		pidsNum := i % len(pids)
 		src.ChainReportUpdate(contract, pids[pidsNum])
 	}
 }
 
+// ======================================================================//
+// Report Read
+// ======================================================================//
 func BenchmarkReportRead(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0004", "localhost:7051")
@@ -357,12 +444,17 @@ func BenchmarkReportRead(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		src.ChainReportView(contract)
 
 	}
 }
 
+// ======================================================================//
+// Delete Prescription
+// ======================================================================//
 func BenchmarkDelete(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
@@ -377,6 +469,8 @@ func BenchmarkDelete(b *testing.B) {
 	}
 	defer gw.Close()
 	contract := src.SmartContract(gw)
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		if i >= len(pids) {
 			break

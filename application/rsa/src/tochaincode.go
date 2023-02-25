@@ -63,40 +63,53 @@ func ProcessGetPubkey(evaluateResult string) *rsa.PublicKey {
 	return pubkey
 }
 
-func ChainCreatePrescription(contract *client.Contract) (string, error) {
+func CreatePrescription(contract *client.Contract) string {
+	return SubmitCreatePrescription(contract, PrepareCreatePrescription())
+}
+func PrepareCreatePrescription() string {
 	var prescription Prescription
 	pubkey, err := readLocalPubkey(currentUserObscure())
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	b64encrypted, err := packagePrescription(pubkey, &prescription)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
+	return b64encrypted
+}
+func SubmitCreatePrescription(contract *client.Contract, b64encrypted string) string {
 	pid, err := contract.SubmitTransaction("CreatePrescription", b64encrypted)
 	if err != nil {
-		return "", ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
-	return string(pid), nil
+	return string(pid)
 }
 
-func ChainReadPrescription(contract *client.Contract, pid string) (*Prescription, error) {
+func ReadPrescription(contract *client.Contract, pid string) *Prescription {
+	return ProcessReadPrescription(EvaluateReadPrescription(contract, pid))
+}
+func EvaluateReadPrescription(contract *client.Contract, pid string) string {
 	// Retrieve from smart contract
 	pdata, err := contract.EvaluateTransaction("ReadPrescription", pid)
 	if err != nil {
-		return nil, ChaincodeParseError(err)
+		panic(ChaincodeParseError(err))
 	}
+	return string(pdata)
+}
+func ProcessReadPrescription(pdata string) *Prescription {
 	// Unpackage and return the prescription
-	return unpackagePrescription(string(pdata))
+	out, err := unpackagePrescription(string(pdata))
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
 func ChainSharePrescription(contract *client.Contract, pid string, username string) error {
 	obscureName := obscureName(username)
 	//Retrieve prescription with current user credentials
-	prescription, err := ChainReadPrescription(contract, pid)
-	if err != nil {
-		return err
-	}
+	prescription := ReadPrescription(contract, pid)
 	//Request pubkey from username to share to
 	otherPubkey := GetPubkey(contract, obscureName)
 
@@ -163,10 +176,8 @@ func ChainUpdatePrescription(contract *client.Contract, pid string, update *Pres
 }
 
 func ChainSetfillPrescription(contract *client.Contract, pid string, newfill uint8) error {
-	prescription, err := ChainReadPrescription(contract, pid)
-	if err != nil {
-		return fmt.Errorf("failed to read prescription %v : %v", pid, err)
-	}
+	prescription := ReadPrescription(contract, pid)
+
 	prescription.PiecesFilled = newfill
 
 	b64gob, err := reencryptPrescriptionSet(contract, pid, prescription)
@@ -218,10 +229,8 @@ func ChainReportUpdate(contract *client.Contract, pid string) error {
 	if err != nil {
 		return err
 	}
-	prescription, err := ChainReadPrescription(contract, pid)
-	if err != nil {
-		return err
-	}
+	prescription := ReadPrescription(contract, pid)
+
 	pset := make(map[string]string)
 	for _, obscuredName := range *readers {
 		pubkey := GetPubkey(contract, obscuredName)

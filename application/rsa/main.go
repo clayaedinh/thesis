@@ -161,19 +161,12 @@ func genkey(username string) {
 }
 
 func createp(contract *client.Contract) {
-	pid, err := src.ChainCreatePrescription(contract)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Printf("%vCreate Prescription Successful. PID: %v%v\n", GREEN, pid, NC)
-	}
+	pid := src.CreatePrescription(contract)
+	fmt.Printf("%vCreate Prescription Successful. PID: %v%v\n", GREEN, pid, NC)
 }
 
 func readp(contract *client.Contract, pid string) {
-	prescription, err := src.ChainReadPrescription(contract, pid)
-	if err != nil {
-		panic(err)
-	}
+	prescription := src.ReadPrescription(contract, pid)
 	fmt.Printf("Prescription: %v\n", prescription)
 }
 
