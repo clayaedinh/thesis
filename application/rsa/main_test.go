@@ -36,6 +36,9 @@ func BenchmarkGenerateKey(b *testing.B) {
 
 }
 
+// ======================================================================//
+// Send Pubkey
+// ======================================================================//
 func BenchmarkSendKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "Admin", "localhost:7051")
@@ -92,6 +95,9 @@ func BenchmarkSendKeySubmit(b *testing.B) {
 	}
 }
 
+// ======================================================================//
+// Get Pubkey
+// ======================================================================//
 func BenchmarkGetKey(b *testing.B) {
 	// Connection Phase
 	src.SetConnectionVariables("org1", "user0002", "localhost:7051")
