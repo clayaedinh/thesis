@@ -104,6 +104,8 @@ createAdmin(){
 }
 
 createUsers () {
+    go build
+    deleteKeys
     createUser "0001" 1 "DOCTOR"
     createUser "0002" 1 "PATIENT"
     createUser "0003" 2 "PHARMA"  
