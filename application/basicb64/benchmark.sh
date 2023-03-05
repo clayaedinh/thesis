@@ -5,7 +5,7 @@ elif [ "$1" = "split" ]; then
 elif [ "$1" = "all" ]; then
     go test -bench=Bench -benchtime=10x
 elif [ "$1" = "scalereport" ]; then
-    go test -bench=BenchmarkPrescriptionAmountAndReportRead -benchtime=10x
+    go test -bench=BenchmarkPrescriptionAmountAndReportRead -benchtime=100x
 elif [ $# -gt 0 ]; then
     echo "unrecognized argument"
 fi
