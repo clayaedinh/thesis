@@ -781,3 +781,109 @@ func BenchmarkSplit(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkPrescriptionAmountAndReportRead(b *testing.B) {
+	var pids []string
+	b.Run("(Create)", func(b *testing.B) {
+		// Connection Phase
+		src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+		clientConnection, err := src.NewGrpcConnection()
+		if err != nil {
+			panic(err)
+		}
+		defer clientConnection.Close()
+		gw, err := src.DefaultGateway(clientConnection)
+		if err != nil {
+			panic(err)
+		}
+		defer gw.Close()
+		contract := src.SmartContract(gw)
+
+		b.ResetTimer()
+		//Runtime Phase
+		for i := 0; i < b.N; i++ {
+			pids = append(pids, src.CreatePrescription(contract))
+		}
+	})
+
+	b.Run("(SharetoDoctors)", func(b *testing.B) {
+		// Connection Phase
+		src.SetConnectionVariables("org1", "user0002", "localhost:7051")
+		clientConnection, err := src.NewGrpcConnection()
+		if err != nil {
+			panic(err)
+		}
+		defer clientConnection.Close()
+		gw, err := src.DefaultGateway(clientConnection)
+		if err != nil {
+			panic(err)
+		}
+		defer gw.Close()
+		contract := src.SmartContract(gw)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			pidsNum := i % len(pids)
+			src.SharePrescription(contract, pids[pidsNum], "user0001")
+		}
+	})
+
+	b.Run("(ReportAddReader)", func(b *testing.B) {
+		// Connection Phase
+		src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+		clientConnection, err := src.NewGrpcConnection()
+		if err != nil {
+			panic(err)
+		}
+		defer clientConnection.Close()
+		gw, err := src.DefaultGateway(clientConnection)
+		if err != nil {
+			panic(err)
+		}
+		defer gw.Close()
+		contract := src.SmartContract(gw)
+		b.ResetTimer()
+		src.ChainReportAddReader(contract)
+	})
+
+	b.Run("(ReportUpdate)", func(b *testing.B) {
+		// Connection Phase
+		src.SetConnectionVariables("org1", "user0001", "localhost:7051")
+		clientConnection, err := src.NewGrpcConnection()
+		if err != nil {
+			panic(err)
+		}
+		defer clientConnection.Close()
+		gw, err := src.DefaultGateway(clientConnection)
+		if err != nil {
+			panic(err)
+		}
+		defer gw.Close()
+		contract := src.SmartContract(gw)
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			pidsNum := i % len(pids)
+			src.ReportUpdate(contract, pids[pidsNum])
+		}
+	})
+	b.Run("ReportRead", func(b *testing.B) {
+		// Connection Phase
+		src.SetConnectionVariables("org1", "user0004", "localhost:7051")
+		clientConnection, err := src.NewGrpcConnection()
+		if err != nil {
+			panic(err)
+		}
+		defer clientConnection.Close()
+		gw, err := src.DefaultGateway(clientConnection)
+		if err != nil {
+			panic(err)
+		}
+		defer gw.Close()
+		contract := src.SmartContract(gw)
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			src.ReportView(contract)
+		}
+	})
+}
