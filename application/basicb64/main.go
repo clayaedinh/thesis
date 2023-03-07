@@ -106,6 +106,13 @@ func main() {
 		deletep(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "reportread" {
 		reportread(contract)
+	} else if flag.Arg(0) == "getCreate" {
+		getCreateOutput(contract)
+	} else if flag.Arg(0) == "getUpdate" {
+		getUpdateOutput(contract)
+	} else if flag.Arg(0) == "getSetfill" {
+		checkEnoughArgs(2)
+		getSetfillOutput(contract, flag.Arg(2))
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -155,6 +162,33 @@ func reportread(contract *client.Contract) {
 		fmt.Printf("x: %v\n", x)
 	}
 }
+
+func getCreateOutput(contract *client.Contract) {
+	createb64 := src.PrepareCreatePrescription()
+	testpid := src.SubmitCreatePrescription(contract, createb64)
+	fmt.Printf("createb64: %v\n", createb64)
+	fmt.Printf("testpid: %v\n", testpid)
+}
+
+func getUpdateOutput(contract *client.Contract) {
+	prescription := src.Prescription{
+		Brand:          "DRUG BRAND",
+		Dosage:         "DRUG DOSAGE",
+		PatientName:    "PATIENT NAME",
+		PatientAddress: "PATIENT ADDR",
+		PrescriberName: "PRESC NAME",
+		PrescriberNo:   1234567,
+		PiecesTotal:    100,
+		PiecesFilled:   0,
+	}
+	updateb64 := src.PrepareUpdatePrescription(&prescription)
+	fmt.Printf("updateb64: %v\n", updateb64)
+}
+func getSetfillOutput(contract *client.Contract, testpid string) {
+	setfillb64 := src.PrepareSetfillPrescription(contract, testpid, 100)
+	fmt.Printf("setfillb64: %v\n", setfillb64)
+}
+
 func checkEnoughArgs(expected int) {
 	if len(flag.Args()) < expected {
 		panic(fmt.Errorf("%vmethod '%v' expected %v arguments, but was only given %v. Do './rsa help' for method options", RED, flag.Arg(0), expected-1, len(flag.Args())-1))

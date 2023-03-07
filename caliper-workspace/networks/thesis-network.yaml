@@ -14,27 +14,11 @@ organizations:
   - mspid: Org1MSP
     identities:
       certificates:
-      - name: 'user0001'
+      - name: 'Admin'
         clientPrivateKey:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0001@org1.example.com/msp/keystore/priv_sk'
+          path: '../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/67edc86a86ab9b45b76f4c898d13524050ab6b40d0c99be786339ea7f0c3f831_sk'
         clientSignedCert:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0001@org1.example.com/msp/signcerts/user0001@org1.example.com-cert.pem'
-      - name: 'user0002'
-        clientPrivateKey:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0002@org1.example.com/msp/keystore/priv_sk'
-        clientSignedCert:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/user0002@org1.example.com/msp/signcerts/user0002@org1.example.com-cert.pem'
+          path: '../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem'
     connectionProfile:
       path: '../test-network/organizations/peerOrganizations/org1.example.com/connection-org1.yaml'
-      discover: true
-  - mspid: Org2MSP
-    identities:
-      certificates:
-      - name: 'user0003'
-        clientPrivateKey:
-          path: '../test-network/organizations/peerOrganizations/org2.example.com/users/user0003@org2.example.com/msp/keystore/priv_sk'
-        clientSignedCert:
-          path: '../test-network/organizations/peerOrganizations/org2.example.com/users/user0003@org2.example.com/msp/signcerts/user0003@org2.example.com-cert.pem'
-    connectionProfile:
-      path: '../test-network/organizations/peerOrganizations/org2.example.com/connection-org2.yaml'
       discover: true
