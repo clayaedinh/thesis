@@ -492,7 +492,8 @@ func BenchmarkPrescriptionAmountAndReportRead(b *testing.B) {
 			pids = append(pids, src.CreatePrescription(contract))
 		}
 	})
-	b.Run("ReportRead", func(b *testing.B) {
+	var reports []string
+	b.Run("ReportReadEvaluate", func(b *testing.B) {
 		// Connection Phase
 		src.SetConnectionVariables("org1", "user0004", "localhost:7051")
 		clientConnection, err := src.NewGrpcConnection()
@@ -509,7 +510,13 @@ func BenchmarkPrescriptionAmountAndReportRead(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			src.ReportView(contract)
+			reports = append(reports, src.EvaluateReportView(contract))
+		}
+	})
+
+	b.Run("ReportReadProcess", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			src.ProcessReportView(reports[i])
 		}
 	})
 }

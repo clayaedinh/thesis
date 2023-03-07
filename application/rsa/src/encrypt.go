@@ -20,7 +20,7 @@ const (
 	privFilename = "privkey.pem"
 )
 
-const RSA_BYTES int = 2038
+const RSA_BYTES int = 2048
 
 // ===============================================
 // Encryption Read (rsa key type)
