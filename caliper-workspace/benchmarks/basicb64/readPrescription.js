@@ -13,11 +13,12 @@ class ReadPrescriptionWorkload extends WorkloadModuleBase {
      */
     async submitTransaction() {
     	this.txIndex++;
+        var pid = this.txIndex + (this.workerIndex * this.totalWorkers);
     	let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
-            contractFunction: 'GetPrescriptionReport',
-            contractArguments: [],
+            contractFunction: 'ReadPrescription',
+            contractArguments: [pid.toString()],
             timeout: 30,
             readOnly: true
         };

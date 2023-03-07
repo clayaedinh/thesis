@@ -17,7 +17,7 @@ class ReadReportWorkload extends WorkloadModuleBase {
             contractId: 'basicb64',
             contractVersion: '1.0',
             contractFunction: 'GetPrescriptionReport',
-            contractArguments: ["0"],
+            contractArguments: [],
             timeout: 30,
             readOnly: true
         };

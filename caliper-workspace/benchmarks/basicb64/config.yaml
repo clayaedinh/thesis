@@ -3,7 +3,7 @@ test:
     number: 5
   rounds:
     - label: Create a prescription.
-      txNumber: 100
+      txNumber: 500
       rateControl:
           type: fixed-load
           opts:

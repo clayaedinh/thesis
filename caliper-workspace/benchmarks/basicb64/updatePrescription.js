@@ -14,11 +14,12 @@ class UpdatePrescriptionWorkload extends WorkloadModuleBase {
     async submitTransaction() {
     	this.txIndex++;
         var b64Update = "/5f/gQMBAQxQcmVzY3JpcHRpb24B/4IAAQgBBUJyYW5kAQwAAQZEb3NhZ2UBDAABC1BhdGllbnROYW1lAQwAAQ5QYXRpZW50QWRkcmVzcwEMAAEOUHJlc2NyaWJlck5hbWUBDAABDFByZXNjcmliZXJObwEGAAELUGllY2VzVG90YWwBBgABDFBpZWNlc0ZpbGxlZAEGAAAAS/+CAQpEUlVHIEJSQU5EAQtEUlVHIERPU0FHRQEMUEFUSUVOVCBOQU1FAQxQQVRJRU5UIEFERFIBClBSRVNDIE5BTUUB/RLWhwFkAA=="
-    	let args = {
+    	var pid = this.txIndex + (this.workerIndex * this.totalWorkers);
+        let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
             contractFunction: 'UpdatePrescription',
-            contractArguments: ["0", b64Update],
+            contractArguments: [pid.toString(), b64Update],
             timeout: 30,
         };
         await this.sutAdapter.sendRequests(args);

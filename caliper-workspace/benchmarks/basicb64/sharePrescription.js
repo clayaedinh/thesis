@@ -14,11 +14,12 @@ class SharePrescriptionWorkload extends WorkloadModuleBase {
     async submitTransaction() {
     	this.txIndex++;
         var caliperAdminObscured = "5a6a59ea61c3e616cbe67281399d1991cf5efe32d253203698ad63fea1daf9ae"
+        var pid = this.txIndex + (this.workerIndex * this.totalWorkers);
     	let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
             contractFunction: 'SharePrescription',
-            contractArguments: ["0", caliperAdminObscured],
+            contractArguments: [pid.toString(), caliperAdminObscured],
             timeout: 30,
         };
         await this.sutAdapter.sendRequests(args);
