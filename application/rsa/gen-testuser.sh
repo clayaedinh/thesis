@@ -99,6 +99,7 @@ createUser () {
 }
 
 createAdmin(){
+    deleteKeys
     ./rsa genkey Admin
     ./rsa storekey Admin
 }
@@ -113,6 +114,8 @@ createUsers () {
 }
 
 createCaliperAdmin() {
+    go build
+    deleteKeys
     ./rsa genkey CaliperAdmin
     ./rsa storekey CaliperAdmin
     cd ${TEST_NETWORK_PATH}
