@@ -1,0 +1,28 @@
+test:
+  workers:
+    number: 5
+  rounds:
+    - label: Store a key.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/rsa/storeKey.js
+    - label: Retrieve a key.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/rsa/getKey.js
+    - label: Create a prescription.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/rsa/createPrescription.js

@@ -138,6 +138,8 @@ func main() {
 		reportgen(contract, flag.Arg(1))
 	} else if flag.Arg(0) == "reportread" {
 		reportread(contract)
+	} else if flag.Arg(0) == "getOutput" {
+		getOutput(contract)
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -225,6 +227,19 @@ func readerall(contract *client.Contract) {
 		panic(err)
 	}
 	fmt.Printf("them: %v\n", *them)
+}
+
+// Output Functions
+// Gets the "output" of the application that is sent to the chaincode
+func getOutput(contract *client.Contract) {
+	//store key
+	obscuredName, b64key := src.PrepareSendPubkey("CaliperAdmin")
+	fmt.Printf("obscuredName: %v\n", obscuredName)
+	fmt.Printf("b64key: %v\n", b64key)
+	//get key  just needs obscuredName so no output
+	//create prescription
+	b64prescription := src.PrepareCreatePrescription()
+	fmt.Printf("b64prescription: %v\n", b64prescription)
 }
 
 func checkEnoughArgs(expected int) {
