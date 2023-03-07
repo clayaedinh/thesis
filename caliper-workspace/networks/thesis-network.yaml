@@ -16,7 +16,7 @@ organizations:
       certificates:
       - name: 'CaliperAdmin'
         clientPrivateKey:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/CaliperAdmin@org1.example.com/msp/keystore/db775cb8466fd2b14d6271bc76c8c982b2be2d0b061b2a9367df573faefa7a07_sk'
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/CaliperAdmin@org1.example.com/msp/keystore/5f0c34b6067749ec16a580b14acd9a47785f631cacef23c03c79a2f1e3a54c05_sk'
         clientSignedCert:
           path: '../test-network/organizations/peerOrganizations/org1.example.com/users/CaliperAdmin@org1.example.com/msp/signcerts/cert.pem'
     connectionProfile:
