@@ -18,12 +18,6 @@ All - Read Prescription
 // Create Prescription
 // ============================================================ //
 func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface, b64prescription string) (string, error) {
-	// Verify if current user is a Patient
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
-	if err != nil {
-		return "", err
-	}
-
 	// Generate ID, and check if no prescription already exists with the given id
 	pid := genPrescriptionId()
 	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
@@ -76,11 +70,6 @@ func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInter
 // Share Prescription
 // ============================================================ //
 func (s *SmartContract) SharePrescription(ctx contractapi.TransactionContextInterface, pid string, shareToUser string, b64prescription string) error {
-	// Verify if current user is a Patient
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
-	if err != nil {
-		return err
-	}
 	// Get Prescription Set
 	b64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -145,11 +134,6 @@ func (s *SmartContract) PrescriptionSharedTo(ctx contractapi.TransactionContextI
 // Update Prescription
 // ============================================================ //
 func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
-	// Verify if current user is a Doctor
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_DOCTOR)
-	if err != nil {
-		return err
-	}
 	// Verify if a prescription already exists with the given id
 	oldb64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -175,11 +159,6 @@ func (s *SmartContract) UpdatePrescription(ctx contractapi.TransactionContextInt
 // Setfill Prescription
 // ============================================================ //
 func (s *SmartContract) SetfillPrescription(ctx contractapi.TransactionContextInterface, pid string, b64pset string) error {
-	// Verify if current user is a Pharmacist
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PHARMACIST)
-	if err != nil {
-		return err
-	}
 	// Verify if a prescription already exists with the given id
 	oldb64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {
@@ -206,11 +185,6 @@ func (s *SmartContract) SetfillPrescription(ctx contractapi.TransactionContextIn
 // Delete Prescription
 // ============================================================ //
 func (s *SmartContract) DeletePrescription(ctx contractapi.TransactionContextInterface, pid string) error {
-	// Verify if current user is a Patient
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PATIENT)
-	if err != nil {
-		return err
-	}
 	// Get Old Prescription Set
 	oldb64pset, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
 	if err != nil {

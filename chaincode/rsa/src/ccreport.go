@@ -7,14 +7,9 @@ import (
 )
 
 func (s *SmartContract) RegisterMeAsReportReader(ctx contractapi.TransactionContextInterface) error {
-	// Verify if current user is a Report Reader role
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_READER)
-	if err != nil {
-		return err
-	}
 	obscuredName := clientObscuredName(ctx)
 	//verify if user has public key information (i.e. if the user exists properly)
-	err = checkIfUserPubkeyExists(ctx, obscuredName)
+	err := checkIfUserPubkeyExists(ctx, obscuredName)
 	if err != nil {
 		return err
 	}
@@ -59,12 +54,6 @@ func (s *SmartContract) GetAllReportReaders(ctx contractapi.TransactionContextIn
 }
 
 func (s *SmartContract) UpdateReport(ctx contractapi.TransactionContextInterface, pid string, b64reports string) error {
-	// Verify if current user is a Doctor or Pharmacist (This is intended to be called directly after Update or Setfill)
-	not_doctor := ctx.GetClientIdentity().AssertAttributeValue("role", USER_DOCTOR)
-	not_pharma := ctx.GetClientIdentity().AssertAttributeValue("role", USER_PHARMACIST)
-	if not_doctor != nil && not_pharma != nil {
-		return fmt.Errorf("client certificate does not have role=DOCTOR or role=PHARMA. cannot update report")
-	}
 	// unpack the b64 reports
 	reportset, err := unpackagePrescriptionSet(b64reports)
 	if err != nil {
@@ -98,11 +87,6 @@ func (s *SmartContract) UpdateReport(ctx contractapi.TransactionContextInterface
 }
 
 func (s *SmartContract) GetPrescriptionReport(ctx contractapi.TransactionContextInterface) (string, error) {
-	// Verify if current user is a Report Reader role
-	err := ctx.GetClientIdentity().AssertAttributeValue("role", USER_READER)
-	if err != nil {
-		return "", err
-	}
 	// Get current user
 	currentUser := clientObscuredName(ctx)
 	// Check if current user is in report readers
