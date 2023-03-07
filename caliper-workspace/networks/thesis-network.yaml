@@ -14,11 +14,11 @@ organizations:
   - mspid: Org1MSP
     identities:
       certificates:
-      - name: 'Admin'
+      - name: 'CaliperAdmin'
         clientPrivateKey:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/a8277df0f9055132644b965f5aa1c88a87379aa52a73ddeb66df38730057ad44_sk'
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/CaliperAdmin@org1.example.com/msp/keystore/158ca6d523459f0cee41367c859714d413f6823cd50e07dfc1d20d4c245bf26b_sk'
         clientSignedCert:
-          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem'
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/CaliperAdmin@org1.example.com/msp/signcerts/cert.pem'
     connectionProfile:
       path: '../test-network/organizations/peerOrganizations/org1.example.com/connection-org1.yaml'
       discover: true

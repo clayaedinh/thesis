@@ -54,12 +54,33 @@ createUsers () {
     createUser "0004" 1 "READER"
 }
 
+createCaliperAdmin() {
+    cd ${TEST_NETWORK_PATH}
+    local USERNAME=CaliperAdmin
+    local ORG_NUM=1
+    export PATH=${PWD}/../bin:${PWD}:$PATH
+
+    export FABRIC_CFG_PATH=$PWD/../config/
+    export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/
+    fabric-ca-client register --caname ca-org${ORG_NUM} --id.name ${USERNAME} --id.secret pw${USERNAME} --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/org${ORG_NUM}/tls-cert.pem"
+
+    if [ "$ORG_NUM" = "1" ] || [ $ORG_NUM -eq 1 ]; then
+        PORT=$ORG1PORT
+    else
+        PORT=$ORG2PORT
+    fi
+    fabric-ca-client enroll -u https://${USERNAME}:pw${USERNAME}@${PORT} --caname ca-org${ORG_NUM} -M "${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/users/${USERNAME}@org${ORG_NUM}.example.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/org${ORG_NUM}/tls-cert.pem"
+    cp ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/org${ORG_NUM}.example.com/users/${USERNAME}@org${ORG_NUM}.example.com/msp/config.yaml
+}
+
 if [ "$1" = "help" ] || [ $# -eq 0 ]; then
     printHelp
 elif [ "$1" = "user" ]; then
     createUser $2 $3 $4
 elif [ "$1" = "samples" ]; then
     createUsers
+elif [ "$1" = "caliper-admin" ]; then
+    createCaliperAdmin
 elif [ $# -gt 0 ]; then
     printError
 fi

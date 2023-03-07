@@ -113,6 +113,8 @@ func main() {
 	} else if flag.Arg(0) == "getSetfill" {
 		checkEnoughArgs(2)
 		getSetfillOutput(contract, flag.Arg(1))
+	} else if flag.Arg(0) == "getCaliperAdmin" {
+		getCaliperAdminObscured()
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}
@@ -187,6 +189,10 @@ func getUpdateOutput(contract *client.Contract) {
 func getSetfillOutput(contract *client.Contract, testpid string) {
 	setfillb64 := src.PrepareSetfillPrescription(contract, testpid, 100)
 	fmt.Printf("setfillb64: %v\n", setfillb64)
+}
+
+func getCaliperAdminObscured() {
+	fmt.Printf("%v\n", src.ObscureName("CaliperAdmin"))
 }
 
 func checkEnoughArgs(expected int) {
