@@ -41,7 +41,7 @@ test:
           opts:
             transactionLoad: 5
       workload:
-        module: benchmarks/basicb64/setfillPrescription.
+        module: benchmarks/basicb64/setfillPrescription.js
     - label: Read a report.
       txNumber: 100
       rateControl:

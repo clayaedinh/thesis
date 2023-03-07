@@ -16,7 +16,7 @@ class ReadReportWorkload extends WorkloadModuleBase {
     	let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
-            contractFunction: 'ReadReport',
+            contractFunction: 'GetPrescriptionReport',
             contractArguments: ["0"],
             timeout: 30,
             readOnly: true
