@@ -27,9 +27,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"math/rand"
 	"regexp"
-	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -100,11 +98,22 @@ func obscureName(username string) string {
 	raw := sha256.Sum256([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
+
+var nextPrescription = -1
+
+/*
+	func genPrescriptionId() string {
+		rand.Seed(time.Now().UnixNano())
+		pid := rand.Uint64()
+		return fmt.Sprintf("%v", pid)
+	}
+*/
+
 func genPrescriptionId() string {
-	rand.Seed(time.Now().UnixNano())
-	pid := rand.Uint64()
-	return fmt.Sprintf("%v", pid)
+	nextPrescription++
+	return fmt.Sprintf("%v", nextPrescription)
 }
+
 func packageStringSlice(strings *[]string) (string, error) {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
