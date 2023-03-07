@@ -238,8 +238,29 @@ func getOutput(contract *client.Contract) {
 	fmt.Printf("b64key: %v\n", b64key)
 	//get key  just needs obscuredName so no output
 	//create prescription
-	b64prescription := src.PrepareCreatePrescription()
-	fmt.Printf("b64prescription: %v\n", b64prescription)
+	b64Create := src.PrepareCreatePrescription()
+	fmt.Printf("b64prescription: %v\n", b64Create)
+
+	//share prescription
+	_, b64Share := src.PrepareSharePrescription(contract, "0", "CaliperAdmin")
+	fmt.Printf("b64Share: %v\n", b64Share)
+
+	//update prescription
+	prescription := src.Prescription{
+		Brand:          "DRUG BRAND",
+		Dosage:         "DRUG DOSAGE",
+		PatientName:    "PATIENT NAME",
+		PatientAddress: "PATIENT ADDR",
+		PrescriberName: "PRESC NAME",
+		PrescriberNo:   1234567,
+		PiecesTotal:    100,
+		PiecesFilled:   0,
+	}
+	b64update := src.PrepareUpdatePrescription(contract, "0", &prescription)
+	fmt.Printf("b64update: %v\n", b64update)
+
+	b64setfill := src.PrepareSetfillPrescription(contract, "0", 100)
+	fmt.Printf("b64setfill: %v\n", b64setfill)
 }
 
 func checkEnoughArgs(expected int) {
