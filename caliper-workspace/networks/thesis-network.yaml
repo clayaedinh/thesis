@@ -16,9 +16,9 @@ organizations:
       certificates:
       - name: 'Admin'
         clientPrivateKey:
-          path: '../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/67edc86a86ab9b45b76f4c898d13524050ab6b40d0c99be786339ea7f0c3f831_sk'
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/03b412fe20d2d829979ac504207684880bdad83e5537469d60e748fb998d67e8_sk'
         clientSignedCert:
-          path: '../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem'
+          path: '../test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem'
     connectionProfile:
       path: '../test-network/organizations/peerOrganizations/org1.example.com/connection-org1.yaml'
       discover: true
