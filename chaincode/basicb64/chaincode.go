@@ -101,14 +101,6 @@ func obscureName(username string) string {
 
 var nextPrescription = -1
 
-/*
-	func genPrescriptionId() string {
-		rand.Seed(time.Now().UnixNano())
-		pid := rand.Uint64()
-		return fmt.Sprintf("%v", pid)
-	}
-*/
-
 func genPrescriptionId() string {
 	nextPrescription++
 	return fmt.Sprintf("%v", nextPrescription)
