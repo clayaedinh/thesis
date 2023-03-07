@@ -2,7 +2,7 @@
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
-class ReadPrescriptionWorkload extends WorkloadModuleBase {
+class SetfillPrescriptionWorkload extends WorkloadModuleBase {
     constructor() {
         super();
         this.txIndex = 0;
@@ -13,13 +13,13 @@ class ReadPrescriptionWorkload extends WorkloadModuleBase {
      */
     async submitTransaction() {
     	this.txIndex++;
+        var b64Setfill = "/5f/gQMBAQxQcmVzY3JpcHRpb24B/4IAAQgBBUJyYW5kAQwAAQZEb3NhZ2UBDAABC1BhdGllbnROYW1lAQwAAQ5QYXRpZW50QWRkcmVzcwEMAAEOUHJlc2NyaWJlck5hbWUBDAABDFByZXNjcmliZXJObwEGAAELUGllY2VzVG90YWwBBgABDFBpZWNlc0ZpbGxlZAEGAAAABf+CCGQA"
     	let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
-            contractFunction: 'GetPrescriptionReport',
-            contractArguments: [],
+            contractFunction: 'SetfillPrescription',
+            contractArguments: ["0", b64Setfill],
             timeout: 30,
-            readOnly: true
         };
         await this.sutAdapter.sendRequests(args);
     }
@@ -31,7 +31,7 @@ class ReadPrescriptionWorkload extends WorkloadModuleBase {
  * @return {WorkloadModuleInterface}
  */
 function createWorkloadModule() {
-    return new ReadPrescriptionWorkload();
+    return new SetfillPrescriptionWorkload();
 }
 
 module.exports.createWorkloadModule = createWorkloadModule;

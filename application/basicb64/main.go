@@ -112,7 +112,7 @@ func main() {
 		getUpdateOutput(contract)
 	} else if flag.Arg(0) == "getSetfill" {
 		checkEnoughArgs(2)
-		getSetfillOutput(contract, flag.Arg(2))
+		getSetfillOutput(contract, flag.Arg(1))
 	} else {
 		fmt.Printf("%vInvalid method '%v'. Do './rsa help' for method options.\n", RED, flag.Arg(0))
 	}

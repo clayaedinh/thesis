@@ -3,9 +3,7 @@ test:
     number: 5
   rounds:
     - label: Create a prescription.
-      # 5000 transactions should create around 1000 prescription per worker but not guaranteed
-      # so need to set asset limits to less than 1000 for the other tests
-      txNumber: 500
+      txNumber: 100
       rateControl:
           type: fixed-load
           opts:
@@ -13,12 +11,42 @@ test:
       workload:
         module: benchmarks/basicb64/createPrescription.js
     - label: Read a prescription.
-      # 5000 transactions should create around 1000 prescription per worker but not guaranteed
-      # so need to set asset limits to less than 1000 for the other tests
-      txNumber: 500
+      txNumber: 100
       rateControl:
           type: fixed-load
           opts:
             transactionLoad: 5
       workload:
         module: benchmarks/basicb64/readPrescription.js
+    - label: Share a prescription.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/basicb64/sharePrescription.js
+    - label: Update a prescription.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/basicb64/updatePrescription.js
+    - label: Setfill a prescription.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/basicb64/setfillPrescription.
+    - label: Read a report.
+      txNumber: 100
+      rateControl:
+          type: fixed-load
+          opts:
+            transactionLoad: 5
+      workload:
+        module: benchmarks/basicb64/readReport.js

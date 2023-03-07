@@ -2,7 +2,7 @@
 
 const { WorkloadModuleBase } = require('@hyperledger/caliper-core');
 
-class ReadPrescriptionWorkload extends WorkloadModuleBase {
+class SharePrescriptionWorkload extends WorkloadModuleBase {
     constructor() {
         super();
         this.txIndex = 0;
@@ -16,10 +16,9 @@ class ReadPrescriptionWorkload extends WorkloadModuleBase {
     	let args = {
             contractId: 'basicb64',
             contractVersion: '1.0',
-            contractFunction: 'GetPrescriptionReport',
-            contractArguments: [],
+            contractFunction: 'SharePrescription',
+            contractArguments: ["0", "Admin"],
             timeout: 30,
-            readOnly: true
         };
         await this.sutAdapter.sendRequests(args);
     }
@@ -31,7 +30,7 @@ class ReadPrescriptionWorkload extends WorkloadModuleBase {
  * @return {WorkloadModuleInterface}
  */
 function createWorkloadModule() {
-    return new ReadPrescriptionWorkload();
+    return new SharePrescriptionWorkload();
 }
 
 module.exports.createWorkloadModule = createWorkloadModule;
