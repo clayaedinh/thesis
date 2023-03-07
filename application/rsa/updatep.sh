@@ -1,5 +1,5 @@
 if [ $# -eq 0 ]; then
     echo "Please enter pid"
 else
-./rsa -user=user0001 updatep $1 sample_brand sample_dosage sample_name sample_addr sample_doc 1234567 7
+./rsa -user=CaliperAdmin updatep $1 DRUG_BRAND DRUG_DOSAGE DRUG_NAME DRUG_ADDR DRUG_DOC 1234567 7
 fi

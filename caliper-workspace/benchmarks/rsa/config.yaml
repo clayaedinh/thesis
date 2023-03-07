@@ -2,59 +2,27 @@ test:
   workers:
     number: 5
   rounds:
-    - label: Store a key.
+    - label: Register a report reader.
       txNumber: 100
       rateControl:
           type: fixed-load
           opts:
             transactionLoad: 5
       workload:
-        module: benchmarks/rsa/storeKey.js
-    - label: Retrieve a key.
+        module: benchmarks/rsa/addReader.js
+    - label: Update a prescription to a report.
       txNumber: 100
       rateControl:
           type: fixed-load
           opts:
             transactionLoad: 5
       workload:
-        module: benchmarks/rsa/getKey.js
-    - label: Create a prescription.
-      txNumber: 500
-      rateControl:
-          type: fixed-load
-          opts:
-            transactionLoad: 5
-      workload:
-        module: benchmarks/rsa/createPrescription.js
-    - label: Read a prescription.
+        module: benchmarks/rsa/updateReport.js
+    - label: Read a report.
       txNumber: 100
       rateControl:
           type: fixed-load
           opts:
             transactionLoad: 5
       workload:
-        module: benchmarks/rsa/readPrescription.js
-    - label: Share a prescription.
-      txNumber: 100
-      rateControl:
-          type: fixed-load
-          opts:
-            transactionLoad: 5
-      workload:
-        module: benchmarks/rsa/sharePrescription.js
-    - label: Update a prescription.
-      txNumber: 100
-      rateControl:
-          type: fixed-load
-          opts:
-            transactionLoad: 5
-      workload:
-        module: benchmarks/rsa/updatePrescription.js
-    - label: Setfill a prescription.
-      txNumber: 100
-      rateControl:
-          type: fixed-load
-          opts:
-            transactionLoad: 5
-      workload:
-        module: benchmarks/rsa/setfillPrescription.js
+        module: benchmarks/rsa/readReport.js

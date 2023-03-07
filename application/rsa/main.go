@@ -261,6 +261,9 @@ func getOutput(contract *client.Contract) {
 
 	b64setfill := src.PrepareSetfillPrescription(contract, "0", 100)
 	fmt.Printf("b64setfill: %v\n", b64setfill)
+
+	b64reportUpdate := src.PrepareReportUpdate(contract, "0")
+	fmt.Printf("b64reportUpdate: %v\n", b64reportUpdate)
 }
 
 func checkEnoughArgs(expected int) {
