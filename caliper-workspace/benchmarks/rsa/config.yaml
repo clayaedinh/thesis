@@ -2,7 +2,7 @@ test:
   workers:
     number: 5
   rounds:
-   - label: Store a key.
+    - label: Store a key.
       txNumber: 100
       rateControl:
           type: fixed-load
@@ -51,7 +51,7 @@ test:
       workload:
         module: benchmarks/rsa/updatePrescription.js
     - label: Setfill a prescription.
-       txNumber: 100
+      txNumber: 100
       rateControl:
           type: fixed-load
           opts:
