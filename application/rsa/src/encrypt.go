@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/gob"
@@ -20,7 +20,7 @@ const (
 	privFilename = "privkey.pem"
 )
 
-const RSA_BYTES int = 4096
+const RSA_BYTES int = 1024
 
 // ===============================================
 // Encryption Read (rsa key type)
@@ -56,7 +56,7 @@ func readLocalPrivkey(obscureName string) (*rsa.PrivateKey, error) {
 // from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
 func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 	msgLen := len(msg)
-	hash := sha256.New()
+	hash := sha512.New()
 	step := pub.Size() - 2*hash.Size() - 2
 	var encrypted []byte
 	for start := 0; start < msgLen; start += step {
@@ -78,7 +78,7 @@ func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 // from https://stackoverflow.com/questions/62348923/rs256-message-too-long-for-rsa-public-key-size-error-signing-jwt
 func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 	msgLen := len(ciphertext)
-	hash := sha256.New()
+	hash := sha512.New()
 	step := priv.PublicKey.Size()
 	var decrypted []byte
 	for start := 0; start < msgLen; start += step {
@@ -101,11 +101,11 @@ func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 // ====================================================
 
 func obscureName(username string) string {
-	raw := sha256.Sum256([]byte(username))
+	raw := sha512.Sum512([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
 func ObscureName(username string) string {
-	raw := sha256.Sum256([]byte(username))
+	raw := sha512.Sum512([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
 
