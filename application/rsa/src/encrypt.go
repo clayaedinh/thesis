@@ -20,7 +20,7 @@ const (
 	privFilename = "privkey.pem"
 )
 
-const RSA_BYTES int = 1024
+const RSA_BYTES int = 2048
 
 // ===============================================
 // Encryption Read (rsa key type)
@@ -57,7 +57,7 @@ func readLocalPrivkey(obscureName string) (*rsa.PrivateKey, error) {
 func encryptBytes(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 	msgLen := len(msg)
 	hash := sha512.New()
-	step := pub.Size() - 2*hash.Size() - 2
+	step := pub.Size() - (hash.Size() * 3)
 	var encrypted []byte
 	for start := 0; start < msgLen; start += step {
 		finish := start + step
