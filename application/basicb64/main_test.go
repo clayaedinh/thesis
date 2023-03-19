@@ -98,8 +98,7 @@ func BenchmarkStandard(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SharePrescription(contract, pids[pidsNum], "user0001")
+			src.SharePrescription(contract, pids[i], "user0001")
 		}
 	})
 
@@ -120,8 +119,7 @@ func BenchmarkStandard(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SharePrescription(contract, pids[pidsNum], "user0003")
+			src.SharePrescription(contract, pids[i], "user0003")
 		}
 	})
 
@@ -153,8 +151,7 @@ func BenchmarkStandard(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.UpdatePrescription(contract, pids[pidsNum], &prescription)
+			src.UpdatePrescription(contract, pids[i], &prescription)
 		}
 	})
 
@@ -176,8 +173,7 @@ func BenchmarkStandard(b *testing.B) {
 		b.ResetTimer()
 		// RANDOM PRESCRIPTION VARIABLES
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100)))
+			src.SetfillPrescription(contract, pids[i], uint8(rand.Intn(100)))
 		}
 	})
 
@@ -236,6 +232,10 @@ func BenchmarkSplit(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			b64prescriptions = append(b64prescriptions, src.PrepareCreatePrescription())
 		}
+		b.StopTimer()
+		if b.N == 1 {
+			b64prescriptions = nil
+		}
 	})
 	b.Run("CreateSubmit", func(b *testing.B) {
 		// Connection Phase
@@ -256,6 +256,10 @@ func BenchmarkSplit(b *testing.B) {
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
 			pids = append(pids, src.SubmitCreatePrescription(contract, b64prescriptions[i]))
+		}
+		b.StopTimer()
+		if b.N == 1 {
+			pids = nil
 		}
 	})
 	var pdata []string
@@ -282,6 +286,10 @@ func BenchmarkSplit(b *testing.B) {
 			randPIDNum := rand.Intn(len(pids) - 1)
 			pdata = append(pdata, src.EvaluateReadPrescription(contract, pids[randPIDNum]))
 		}
+		b.StopTimer()
+		if b.N == 1 {
+			pdata = nil
+		}
 	})
 
 	b.Run("ReadProcess", func(b *testing.B) {
@@ -306,8 +314,7 @@ func BenchmarkSplit(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SharePrescription(contract, pids[pidsNum], "user0001")
+			src.SharePrescription(contract, pids[i], "user0001")
 		}
 	})
 
@@ -328,8 +335,7 @@ func BenchmarkSplit(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SharePrescription(contract, pids[pidsNum], "user0003")
+			src.SharePrescription(contract, pids[i], "user0003")
 		}
 	})
 	var updates []string
@@ -366,8 +372,7 @@ func BenchmarkSplit(b *testing.B) {
 		contract := src.SmartContract(gw)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SubmitUpdatePrescription(contract, pids[pidsNum], updates[pidsNum])
+			src.SubmitUpdatePrescription(contract, pids[i], updates[i])
 		}
 	})
 
@@ -390,8 +395,7 @@ func BenchmarkSplit(b *testing.B) {
 		b.ResetTimer()
 		// RANDOM PRESCRIPTION VARIABLES
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			setfills = append(setfills, src.PrepareSetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100))))
+			setfills = append(setfills, src.PrepareSetfillPrescription(contract, pids[i], uint8(rand.Intn(100))))
 		}
 	})
 	b.Run("SetfillSubmit", func(b *testing.B) {
@@ -412,8 +416,7 @@ func BenchmarkSplit(b *testing.B) {
 		b.ResetTimer()
 		// RANDOM PRESCRIPTION VARIABLES
 		for i := 0; i < b.N; i++ {
-			pidsNum := i % len(pids)
-			src.SubmitSetfillPrescription(contract, pids[pidsNum], setfills[pidsNum])
+			src.SubmitSetfillPrescription(contract, pids[i], setfills[i])
 		}
 	})
 

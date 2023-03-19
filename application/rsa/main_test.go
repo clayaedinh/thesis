@@ -74,8 +74,7 @@ func BenchmarkStandard(b *testing.B) {
 
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			src.SendPubkey(contract, keyname[keyNum])
+			src.SendPubkey(contract, keyname[i])
 		}
 	})
 
@@ -97,8 +96,7 @@ func BenchmarkStandard(b *testing.B) {
 
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			src.GetPubkey(contract, src.ObscureName(keyname[keyNum]))
+			src.GetPubkey(contract, src.ObscureName(keyname[i]))
 		}
 	})
 
@@ -362,6 +360,11 @@ func BenchmarkSplit(b *testing.B) {
 			keyname = append(keyname, new_key)
 			src.GenerateUserKeyFiles(new_key)
 		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			keyname = nil
+		}
 	})
 
 	var keyobsname []string
@@ -370,10 +373,15 @@ func BenchmarkSplit(b *testing.B) {
 	b.Run("SendKeyPrepare", func(b *testing.B) {
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			newobs, newkey := src.PrepareSendPubkey(keyname[keyNum])
+			newobs, newkey := src.PrepareSendPubkey(keyname[i])
 			keyobsname = append(keyobsname, newobs)
 			keys = append(keys, newkey)
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			keyobsname = nil
+			keys = nil
 		}
 	})
 
@@ -394,13 +402,11 @@ func BenchmarkSplit(b *testing.B) {
 		b.ResetTimer()
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			src.SubmitSendPubkey(contract, keyobsname[keyNum], keys[keyNum])
+			src.SubmitSendPubkey(contract, keyobsname[i], keys[i])
 		}
 	})
 
 	var getkeyout []string
-
 	b.Run("GetKeyEvaluate", func(b *testing.B) {
 		// Connection Phase
 		src.SetConnectionVariables("org1", "user0002", "localhost:7051")
@@ -418,16 +424,19 @@ func BenchmarkSplit(b *testing.B) {
 		b.ResetTimer()
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			getkeyout = append(getkeyout, src.EvaluateGetPubkey(contract, src.ObscureName(keyname[keyNum])))
+			getkeyout = append(getkeyout, src.EvaluateGetPubkey(contract, src.ObscureName(keyname[i])))
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			getkeyout = nil
 		}
 	})
 
 	b.Run("GetKeyProcess", func(b *testing.B) {
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
-			keyNum := i % len(keyname)
-			src.ProcessGetPubkey(getkeyout[keyNum])
+			src.ProcessGetPubkey(getkeyout[i])
 		}
 	})
 
@@ -437,6 +446,11 @@ func BenchmarkSplit(b *testing.B) {
 		//Runtime Phase
 		for i := 0; i < b.N; i++ {
 			b64prescriptions = append(b64prescriptions, src.PrepareCreatePrescription())
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			b64prescriptions = nil
 		}
 	})
 
@@ -484,6 +498,11 @@ func BenchmarkSplit(b *testing.B) {
 			rand.Seed(time.Now().UnixNano())
 			randPIDNum := rand.Intn(len(pids) - 1)
 			pdata = append(pdata, src.EvaluateReadPrescription(contract, pids[randPIDNum]))
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			pdata = nil
 		}
 	})
 
@@ -537,6 +556,12 @@ func BenchmarkSplit(b *testing.B) {
 			newobs, newenc := src.PrepareSharePrescription(contract, pids[pidsNum], "user0003")
 			shareobs = append(shareobs, newobs)
 			shareenc = append(shareenc, newenc)
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			shareobs = nil
+			shareenc = nil
 		}
 	})
 
@@ -593,6 +618,11 @@ func BenchmarkSplit(b *testing.B) {
 			pidsNum := i % len(pids)
 			updates = append(updates, src.PrepareUpdatePrescription(contract, pids[pidsNum], &prescription))
 		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			updates = nil
+		}
 	})
 
 	b.Run("UpdateSubmit", func(b *testing.B) {
@@ -637,6 +667,11 @@ func BenchmarkSplit(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			pidsNum := i % len(pids)
 			setfills = append(setfills, src.PrepareSetfillPrescription(contract, pids[pidsNum], uint8(rand.Intn(100))))
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			setfills = nil
 		}
 	})
 	b.Run("SetfillSubmit", func(b *testing.B) {
@@ -705,6 +740,11 @@ func BenchmarkSplit(b *testing.B) {
 			pidsNum := i % len(pids)
 			reportupdate = append(reportupdate, src.PrepareReportUpdate(contract, pids[pidsNum]))
 		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			reportupdate = nil
+		}
 	})
 	b.Run("ReportUpdateSubmit", func(b *testing.B) {
 		// Connection Phase
@@ -747,6 +787,11 @@ func BenchmarkSplit(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			reports = append(reports, src.EvaluateReportView(contract))
+		}
+		// remove "test run" benchmark result
+		b.StopTimer()
+		if b.N == 1 {
+			reports = nil
 		}
 	})
 
@@ -866,7 +911,8 @@ func BenchmarkPrescriptionAmountAndReportRead(b *testing.B) {
 			src.ReportUpdate(contract, pids[pidsNum])
 		}
 	})
-	b.Run("ReportRead", func(b *testing.B) {
+	var reports []string
+	b.Run("ReportReadEvaluate", func(b *testing.B) {
 		// Connection Phase
 		src.SetConnectionVariables("org1", "user0004", "localhost:7051")
 		clientConnection, err := src.NewGrpcConnection()
@@ -883,7 +929,13 @@ func BenchmarkPrescriptionAmountAndReportRead(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			src.ReportView(contract)
+			reports = append(reports, src.EvaluateReportView(contract))
+		}
+	})
+
+	b.Run("ReportReadProcess", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			src.ProcessReportView(reports[i])
 		}
 	})
 }
