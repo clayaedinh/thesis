@@ -5,48 +5,48 @@ test:
     - label: Create a prescription.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/createPrescription.js
     - label: Read a prescription.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/readPrescription.js
     - label: Share a prescription.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/sharePrescription.js
     - label: Update a prescription.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/updatePrescription.js
     - label: Setfill a prescription.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/setfillPrescription.js
     - label: Read a report.
       txNumber: 100
       rateControl:
-          type: fixed-rate
+          type: fixed-load
           opts:
-            tps: 10
+            transactionLoad: 5
       workload:
         module: benchmarks/basicb64/readReport.js
