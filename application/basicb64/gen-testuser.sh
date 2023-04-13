@@ -8,7 +8,7 @@ PURPLE='\033[0;35m'
 NC='\033[0m'
 
 TEST_NETWORK_PATH="../../test-network"
-APP_RSA_PATH="../application/rsa"
+APP_BASICB64_PATH="../application/basicb64"
 
 ORG1PORT="localhost:7054"
 ORG2PORT="localhost:8054"
@@ -26,6 +26,7 @@ createUser () {
     echo "${CYAN}creating user${USER_NUM} in org${ORG_NUM} with role ${ROLE}.${NC}"
     cd ${TEST_NETWORK_PATH}
     createUserFabric $USER_NUM $ORG_NUM $ROLE
+    cd ${APP_BASICB64_PATH}
 }
 
 createUserFabric () {
