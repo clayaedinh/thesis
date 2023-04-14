@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/x509"
 	"encoding/base64"
@@ -101,11 +102,11 @@ func decryptBytes(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
 // ====================================================
 
 func obscureName(username string) string {
-	raw := sha512.Sum512([]byte(username))
+	raw := sha256.Sum256([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
 func ObscureName(username string) string {
-	raw := sha512.Sum512([]byte(username))
+	raw := sha256.Sum256([]byte(username))
 	return hex.EncodeToString(raw[:])
 }
 
