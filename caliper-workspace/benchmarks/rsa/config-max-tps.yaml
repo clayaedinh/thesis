@@ -25,6 +25,14 @@ test:
           opts:
             transactionLoad: 5
       workload:
+        module: benchmarks/rsa/createPrescriptionRand.js
+    - label: Create (Nonrandom) 
+      txNumber: 100
+      rateControl:
+          type: fixed-rate
+          opts:
+            tps: 5
+      workload:
         module: benchmarks/rsa/createPrescription.js
     - label: Read a prescription.
       txNumber: 100

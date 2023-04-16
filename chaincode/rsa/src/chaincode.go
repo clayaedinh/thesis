@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"regexp"
+	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -38,6 +40,12 @@ var nextPrescription = -1
 func genPrescriptionId() string {
 	nextPrescription++
 	return fmt.Sprintf("%v", nextPrescription)
+}
+
+func genPrescriptionIdRand() string {
+	rand.Seed(time.Now().UnixNano())
+	pid := rand.Uint64()
+	return fmt.Sprintf("%v", pid)
 }
 
 func checkIfUserPubkeyExists(ctx contractapi.TransactionContextInterface, obscuredName string) error {

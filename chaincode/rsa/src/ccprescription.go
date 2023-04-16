@@ -47,6 +47,38 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 }
 
 // ============================================================ //
+// Create Prescription
+// ============================================================ //
+func (s *SmartContract) CreatePrescriptionRand(ctx contractapi.TransactionContextInterface, b64prescription string) (string, error) {
+	// Generate ID, and check if no prescription already exists with the given id
+	pid := genPrescriptionIdRand()
+	prev, err := ctx.GetStub().GetPrivateData(collectionPrescription, pid)
+	if err != nil {
+		return "", err
+	}
+	if prev != nil {
+		return "", fmt.Errorf("cannot create prescription %v as it already exists", pid)
+	}
+	// Get requesting user
+	currentUser := clientObscuredName(ctx)
+
+	// Make map pset, consisting of all different encryptions of the same prescription
+	pset := make(map[string]string)
+	// Insert given b64-encoded & encrypted prescription into the pset where key = current user's name
+	pset[currentUser] = b64prescription
+	// Package the pset
+	b64pset, err := packagePrescriptionSet(&pset)
+	if err != nil {
+		return "", err
+	}
+	err = ctx.GetStub().PutPrivateData(collectionPrescription, pid, []byte(b64pset))
+	if err != nil {
+		return "", fmt.Errorf("failed to add prescription to private data: %v", err)
+	}
+	return pid, nil
+}
+
+// ============================================================ //
 // Read Prescription
 // ============================================================ //
 func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, pid string) (string, error) {
